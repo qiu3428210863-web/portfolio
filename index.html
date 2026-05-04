@@ -48,7 +48,7 @@
       --font-vertical: 16;  /* 中间垂直文字字号 */
       --font-date: 18;      /* 右下角日期字号 */
 
-      /* --- 像素文字控制变量 (用于 dhin.png 上的文字) --- */
+      /* --- 像素文字控制变量 (用于 dhin.webp 上的文字) --- */
     --pixel-text-x: 50;   /* 水平位置 (%) - 50 为居中 */
     --pixel-text-y: 52;   /* 垂直位置 (%) - 52 略微偏下以对齐图片视觉中心 */
     --pixel-font-size: 20; /* 像素文字大小 (px) */
@@ -429,7 +429,7 @@
       opacity: 0;
     }
 
-    /* --- 个人信息页面 (基于 personalinformation.png 背景图) --- */
+    /* --- 个人信息页面 (基于 personalinformation.webp 背景图) --- */
     .about-card-overlay {
       position: fixed;
       top: 0;
@@ -465,7 +465,7 @@
       transform: scale(1) translateY(0);
     }
 
-    /* 主背景图 (personalinformation.png) */
+    /* 主背景图 (personalinformation.webp) */
     .info-main-img {
       width: 100%;
       height: auto;
@@ -476,7 +476,7 @@
     /* 照片放置区域 (米白格子) */
     .photo-slot {
       position: absolute;
-      /* 根据 personalinformation.png 的比例进行定位 */
+      /* 根据 personalinformation.webp 的比例进行定位 */
       top: 15.5%;
       left: 8.2%;
       width: 39.5%;
@@ -573,7 +573,7 @@
       transform: rotate(90deg);
     }
 
-    /* --- 项目精选页面 (基于 xmbg.png 背景图) --- */
+    /* --- 项目精选页面 (基于 xmbg.webp 背景图) --- */
     .project-modal-overlay {
       position: fixed;
       top: 0;
@@ -642,7 +642,7 @@
       z-index: 20;
     }
 
-    /* 具体的项目定位 (百分比，你可以根据 xmbg.png 实际位置微调) */
+    /* 具体的项目定位 (百分比，你可以根据 xmbg.webp 实际位置微调) */
     #xm-1 { top: 31%; left: 32.3%; width: 20%; }
     #xm-2 { top: 56%; left: 15%; width: 21%; }
     #xm-3 { top: 52%; left: 67%; width: 22%; }
@@ -931,7 +931,7 @@
       /* 根据变量调整遮罩大小，用于控制裁剪区域 */
       width: calc(var(--skill-mask-w) * 1px);
       height: calc(var(--skill-mask-h) * 1px);
-      background: url('jnbg.png') no-repeat center center;
+      background: url('jnbg.webp') no-repeat center center;
       background-size: 100% 100%;
       border-radius: 0;
       overflow: visible; /* 改为可见，因为裁剪由内部容器负责 */
@@ -1006,7 +1006,7 @@
       white-space: pre-line;
     }
 
-    /* 技能包专属退出元件 (jnt.png) */
+    /* 技能包专属退出元件 (jnt.webp) */
     .skills-exit-btn {
       position: absolute;
       /* --- 退出按键位置与大小调节区 --- */
@@ -1015,7 +1015,7 @@
       width: 81px;     /* 宽度 */
       height: 77px;    /* 高度 */
       /* ----------------------------- */
-      background: url('jnt.png') no-repeat center center;
+      background: url('jnt.webp') no-repeat center center;
       background-size: contain;
       cursor: pointer;
       z-index: 100;
@@ -1153,7 +1153,7 @@
       border-radius: 10px;
     }
 
-    /* --- 实习经历页面 (基于 sxbg.png 背景图) --- */
+    /* --- 实习经历页面 (基于 sxbg.webp 背景图) --- */
     .internship-modal-overlay {
       position: fixed;
       top: 0;
@@ -1182,7 +1182,7 @@
       position: relative;
       width: min(650px, 85vw); /* 缩小背景容器 */
       aspect-ratio: 832 / 1080;
-      background: url('sxbg.png') no-repeat center center;
+      background: url('sxbg.webp') no-repeat center center;
       background-size: contain;
       box-sizing: border-box;
       font-family: 'ZCOOL KuaiLe', sans-serif;
@@ -1564,7 +1564,7 @@
   <div id="entry-sequence">
     <div class="responsive-container">
       <div class="entry-layer" id="layer-in">
-        <img src="in.png" alt="首帧" />
+        <img src="in.webp" alt="首帧" />
 
         <!-- 首页背景滚动文字轮播 -->
         <div class="marquee-wrapper" id="marqueeWrapper">
@@ -1651,27 +1651,27 @@
 
               <!-- 所有零件的 top/left/width 现在相对于背景图的百分比，实现完美缩放对齐 -->
               <div class="part" id="part-关于我" data-name="关于我" data-desc="场景的核心角色，采用Q版粘土风格化设计，增加了交互的趣味性与亲和力。" style="top: 40.17%; left: 81.33%; width: 10.20%; --delay: 280ms;">
-                <img src="man.png" alt="关于我" />
+                <img src="man.webp" alt="关于我" />
               </div>
 
               <div class="part" id="part-社交媒体" data-name="社交媒体" data-desc="灵感来源于日常办公场景，磨砂质感的咖啡杯与简约的桌面，构筑了一个宁静的创作空间。" style="top: 55.89%; left: 41.83%; width: 17.43%; --delay: 120ms;">
-                <img src="coffee.png" alt="社交媒体" />
+                <img src="coffee.webp" alt="社交媒体" />
               </div>
 
               <div class="part" id="part-技能包" data-name="技能包" data-desc="细节决定成败。通过对手工工具的细腻刻画，展现对工艺与造物的极致追求。" style="top: 32.77%; left: 15.33%; width: 15.02%; --delay: 200ms;">
-                <img src="art.png" alt="技能包" />
+                <img src="art.webp" alt="技能包" />
               </div>
 
               <div class="part" id="part-实习经历" data-name="实习经历" data-desc="收纳与秩序的艺术。货架上的每一个小物件都经过精心设计，构成丰富的场景细节。" style="top: 69.67%; left: 73.08%; width: 25.67%; --delay: 360ms;">
-                <img src="shelf.png" alt="实习经历" />
+                <img src="shelf.webp" alt="实习经历" />
               </div>
 
               <div class="part" id="part-项目精选" data-name="项目精选" data-desc="创意迸发的阵地。白板记录着每一个伟大的构思，是作品集创作过程的缩影。" style="top: 10.39%; left: 29.50%; width: 20.35%; --delay: 440ms;">
-                <img src="board.png" alt="项目精选" />
+                <img src="board.webp" alt="项目精选" />
               </div>
 
               <div class="part" id="part-兴趣爱好" data-name="兴趣爱好" data-desc="这里展示了关于运动健身相关的3D建模与交互设计，旨在传达活力与健康的生活态度。" style="top: 72.74%; left: 2.42%; width: 17.20%; --delay: 40ms;">
-                <img src="fitness.png" alt="兴趣爱好" />
+                <img src="fitness.webp" alt="兴趣爱好" />
               </div>
             </div>
           </div>
@@ -1698,7 +1698,7 @@
     </div>
   </div>
 
-  <!-- 实习经历弹窗 (基于 sxbg.png) -->
+  <!-- 实习经历弹窗 (基于 sxbg.webp) -->
   <div class="internship-modal-overlay" id="internshipModalOverlay">
     <div class="internship-container">
       <div class="project-close-btn" id="internshipModalClose">×</div>
@@ -1742,16 +1742,16 @@
 
       <!-- 项目内容元素 (xm1-xm4) -->
       <div class="project-item" id="xm-1" data-title="项目精选 01" data-desc="这是项目 1 的详细描述内容，你可以在 JavaScript 中修改这些文案。">
-        <img src="xm1.png" alt="项目 1" />
+        <img src="xm1.webp" alt="项目 1" />
       </div>
       <div class="project-item" id="xm-2" data-title="项目精选 02" data-desc="这是项目 2 的详细描述内容。">
-        <img src="xm2.png" alt="项目 2" />
+        <img src="xm2.webp" alt="项目 2" />
       </div>
       <div class="project-item" id="xm-3" data-title="项目精选 03" data-desc="这是项目 3 的详细描述内容。">
-        <img src="xm3.png" alt="项目 3" />
+        <img src="xm3.webp" alt="项目 3" />
       </div>
       <div class="project-item" id="xm-4" data-title="项目精选 04" data-desc="这是项目 4 的详细描述内容。">
-        <img src="xm4.png" alt="项目 4" />
+        <img src="xm4.webp" alt="项目 4" />
       </div>
     </div>
   </div>
@@ -1762,20 +1762,20 @@
       <div class="project-close-btn" id="contactModalClose">×</div>
       
       <!-- 联系方式可点击元素 (tk, wx, gm, qq, dh) -->
-      <div class="contact-item" id="contact-tk" data-info-img="dhin.png">
-        <img src="tk.png" alt="TikTok" />
+      <div class="contact-item" id="contact-tk" data-info-img="dhin.webp">
+        <img src="tk.webp" alt="TikTok" />
       </div>
-      <div class="contact-item" id="contact-wx" data-info-img="dhin.png">
-        <img src="wx.png" alt="WeChat" />
+      <div class="contact-item" id="contact-wx" data-info-img="dhin.webp">
+        <img src="wx.webp" alt="WeChat" />
       </div>
-      <div class="contact-item" id="contact-gm" data-info-img="dhin.png">
-        <img src="gm.png" alt="Gmail" />
+      <div class="contact-item" id="contact-gm" data-info-img="dhin.webp">
+        <img src="gm.webp" alt="Gmail" />
       </div>
-      <div class="contact-item" id="contact-qq" data-info-img="dhin.png">
-        <img src="qq.png" alt="QQ" />
+      <div class="contact-item" id="contact-qq" data-info-img="dhin.webp">
+        <img src="qq.webp" alt="QQ" />
       </div>
-      <div class="contact-item" id="contact-dh" data-info-img="dhin.png">
-        <img src="dh.png" alt="Phone" />
+      <div class="contact-item" id="contact-dh" data-info-img="dhin.webp">
+        <img src="dh.webp" alt="Phone" />
       </div>
 
       <!-- 字符信息图片层 (点击图标后弹出，如二维码) -->
@@ -1790,7 +1790,7 @@
 
   <!-- 技能包弹窗 (色环手摇电话动效) -->
   <div class="skills-modal-overlay" id="skillsModalOverlay">
-    <!-- 退出元件 (jnt.png) -->
+    <!-- 退出元件 (jnt.webp) -->
     <div class="skills-exit-btn" id="skillsModalClose"></div>
     
     <div class="skills-content-mask">
@@ -2378,12 +2378,12 @@
     
     // 技能详细内容配置
     const skillInfoData = [
-      { id: "ps", title: "平面视觉设计", icon: "ps.png", content: "熟练掌握Illustrator、Photoshop\n围绕 Illustrator、Photoshop完成整套视觉输出以及产品视觉部分落地\n从前期 logo 与风格方向，到后续海报、画册等物料延展\n形成相对完整的品牌视觉体系。" },
-      { id: "c4d", title: "三维建模与渲染", icon: "c4d.png", content: "熟悉Cinema 4D、KeyShot\n同时掌握 SketchUp、D5、AutoCAD等工具\n可独立完成从建模到渲染的完整流程。" },
-      { id: "gpt", title: "AI辅助设计能力", icon: "gpt.png", content: "熟练运用open ai、google、Anthropic以及国内ai公司旗下多款ai产品工具\n借助工具内的优秀大模型实现文案生成和视觉生成方面内容\n具备一定的vide coding能力，可结合工具实现美观的程序化视觉效果生成" },
-      { id: "figma", title: "产品与交互设计", icon: "figma.png", content: "使用 Figma 与墨刀完成界面设计与交互原型制作\n具备基础的用户体验意\n在视觉设计之外，能够兼顾信息结构与使用逻辑" },
-      { id: "ae", title: "动态与影像表达", icon: "ae.png", content: "掌握 After Effects 的基础动效制作，用于品牌动画及视觉过渡表达\n结合剪映进行短视频剪辑与内容输出，适配新媒体传播场景" },
-      { id: "pen", title: "手绘与创意表达", icon: "pen.png", content: "具备手绘与板绘基础，能够在设计初期通过草图快速建立画面构图与视觉关系，用于梳理整体方向与画面节奏\n相比直接依赖ai生成结果，手绘在表达上更具可控性，能够根据具体需求灵活调整造型与风格" }
+      { id: "ps", title: "平面视觉设计", icon: "ps.webp", content: "熟练掌握Illustrator、Photoshop\n围绕 Illustrator、Photoshop完成整套视觉输出以及产品视觉部分落地\n从前期 logo 与风格方向，到后续海报、画册等物料延展\n形成相对完整的品牌视觉体系。" },
+      { id: "c4d", title: "三维建模与渲染", icon: "c4d.webp", content: "熟悉Cinema 4D、KeyShot\n同时掌握 SketchUp、D5、AutoCAD等工具\n可独立完成从建模到渲染的完整流程。" },
+      { id: "gpt", title: "AI辅助设计能力", icon: "gpt.webp", content: "熟练运用open ai、google、Anthropic以及国内ai公司旗下多款ai产品工具\n借助工具内的优秀大模型实现文案生成和视觉生成方面内容\n具备一定的vide coding能力，可结合工具实现美观的程序化视觉效果生成" },
+      { id: "figma", title: "产品与交互设计", icon: "figma.webp", content: "使用 Figma 与墨刀完成界面设计与交互原型制作\n具备基础的用户体验意\n在视觉设计之外，能够兼顾信息结构与使用逻辑" },
+      { id: "ae", title: "动态与影像表达", icon: "ae.webp", content: "掌握 After Effects 的基础动效制作，用于品牌动画及视觉过渡表达\n结合剪映进行短视频剪辑与内容输出，适配新媒体传播场景" },
+      { id: "pen", title: "手绘与创意表达", icon: "pen.webp", content: "具备手绘与板绘基础，能够在设计初期通过草图快速建立画面构图与视觉关系，用于梳理整体方向与画面节奏\n相比直接依赖ai生成结果，手绘在表达上更具可控性，能够根据具体需求灵活调整造型与风格" }
     ];
 
     const skillCount = skillInfoData.length;
