@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D 粘土风格场景交互</title>
+  <!-- 引入像素风格字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #f2f2f2;
+      --text: #1f1f1f;
+      --hint: rgba(0,0,0,.55);
+      --tooltip: #ffd84d;
+      --tooltipText: #1a1a1a;
+      --shadow: 0 18px 40px rgba(0,0,0,.18);
+      
+      /* 设计稿原始总尺寸 (px) */
+      --design-w: 3554;
+      --design-h: 1998;
+
+      /* 大厅屏幕 (#mainPage) 的像素坐标与尺寸 (基于 3554x1998 设计稿) */
+      /* 恢复居中大画面方案，确保覆盖游戏机黑色屏幕 */
+      --main-x: 558;
+      --main-y: 350;
+      --main-w: 2456;
+      --main-h: 1426;
+
+      /* 内部内容 (#sceneWrapper) 相对于屏幕的偏移与尺寸 */
+      --scene-offset-x: 0;
+      --scene-offset-y: 0;
+      --scene-w: 2456;
+      --scene-h: 1426;
+
+      /* --- 首帧艺术化文字控制变量 (PX) --- */
+      /* 容器边距 */
+      --typo-padding-x: 6;  /* 左右边距百分比 (%) */
+      --typo-padding-y: 80; /* 上下边距像素 (px) */
+
+      /* 左侧文字大小 */
+      --font-header: 28;    /* 左上角标题字号 */
+      --font-quote: 56;     /* 中间大标语字号 */
+      --font-footer: 20;    /* 左下角说明字号 */
+
+      /* 右侧文字大小 */
+      --font-nav: 16;       /* 右上角导航字号 */
+      --font-vertical: 16;  /* 中间垂直文字字号 */
+      --font-date: 18;      /* 右下角日期字号 */
+
+      /* --- 像素文字控制变量 (用于 dhin.png 上的文字) --- */
+    --pixel-text-x: 50;   /* 水平位置 (%) - 50 为居中 */
+    --pixel-text-y: 52;   /* 垂直位置 (%) - 52 略微偏下以对齐图片视觉中心 */
+    --pixel-font-size: 20; /* 像素文字大小 (px) */
+    --pixel-text-color: #333; /* 文字颜色 */
+
+    /* --- 滚动轮播文字变量 --- */
+    --marquee-font-size: 120; /* 轮播文字字号 (px) */
+    --marquee-opacity: 0.05;  /* 轮播文字透明度 */
+    --marquee-speed: 40s;     /* 轮播滚动速度 */
+
+    /* --- 技能包色环变量 --- */
+    --skill-dial-size: 700;   /* 色环分布半径参考 */
+    --skill-node-w: 120;      /* 滚动元素宽度 (px) - 纯图标模式下调小容器宽度 */
+    --skill-node-h: 120;      /* 滚动元素高度 (px) - 调为正方形 */
+    --skill-node-font: 14;    /* 滚动元素字体大小 (px) */
+    --skill-active-scale: 1.4; /* 激活时的放大倍数 - 略微调大 */
+    --skill-accent-color: #000;
+
+    /* --- 技能包遮罩控制 (微调这里来控制裁剪范围) --- */
+    --skill-mask-w: 1300;     /* 背景底图宽度 (px) */
+    --skill-mask-h: 820;      /* 背景底图高度 (px) */
+
+    /* --- 黑色屏幕内部裁剪区域 (核心：控制元素出现范围) --- */
+    --screen-inner-x: 6;      /* 距离左侧偏移 (%) */
+    --screen-inner-y: 9.5;      /* 距离顶部偏移 (%) */
+    --screen-inner-w: 88;     /* 黑色屏幕宽度 (%) */
+    --screen-inner-h: 75;     /* 黑色屏幕高度 (%) */
+  }
+
+    *{ box-sizing: border-box; }
+    html,body{ height: 100%; }
+    body{
+      margin: 0;
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
+      background: radial-gradient(1200px 800px at 30% 20%, #ffffff 0%, var(--bg) 55%, #ececec 100%);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* 核心响应式容器 - 始终覆盖视口并保持 16:9 比例 (钉子布局的核心) */
+    .responsive-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100vw;
+      height: calc(100vw * (1998 / 3554));
+      min-height: 100vh;
+      min-width: calc(100vh * (3554 / 1998));
+      display: block;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .entry-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: none; /* 默认全部不显示，解决层级穿透闪烁 */
+    }
+
+    #layer-in { z-index: 40; display: flex; align-items: center; justify-content: center; }
+    #layer-video { z-index: 30; }
+    #layer-back { z-index: 35; }
+    #layer-out { z-index: 20; } 
+
+    /* 统一背景图片样式 */
+    .out-bg, #sceneWrapper img.bg, #layer-in img, #layer-video video, #layer-back video {
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+      pointer-events: none; /* 仅背景层禁止交互 */
+    }
+
+    /* 开场序列样式 */
+    #entry-sequence {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 20000;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 同步层容器 */
+    .sync-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    #mainPage {
+      position: absolute;
+      /* 核心：基于变量自动换算百分比，实现“钉子”效果 */
+      /* 提示：若要在浏览器 Inspector 中实时调试并保持缩放，请直接修改 --main-x 等变量的值 */
+      left: calc(var(--main-x) / var(--design-w) * 100%);
+      top: calc(var(--main-y) / var(--design-h) * 100%);
+      width: calc(var(--main-w) / var(--design-w) * 100%);
+      height: calc(var(--main-h) / var(--design-h) * 100%);
+      
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.2s ease;
+      z-index: 500;
+      overflow: hidden;
+      border-radius: 78px;
+    }
+
+    #mainPage.power-on {
+      opacity: 1;
+      pointer-events: auto !important;
+      animation: powerOn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    #sceneWrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      /* 使用独立变量计算尺寸，避免受父容器缩放比变化的干扰 */
+      width: calc(var(--scene-w) / var(--main-w) * 100%);
+      height: calc(var(--scene-h) / var(--main-h) * 100%);
+      /* 这里的 margin 用于微调位置，同样可以编辑变量 */
+      margin-left: calc(var(--scene-offset-x) / var(--main-w) * 100%);
+      margin-top: calc(var(--scene-offset-y) / var(--main-h) * 100%);
+      
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      z-index: 10;
+      pointer-events: auto !important; /* 核心：确保内容可交互 */
+    }
+
+    /* 返回按钮 - 调整到与导航栏一致的位置与高度 */
+    #backHomeBtn {
+      position: absolute;
+      top: calc(68/ var(--design-h) * 100%);
+      left: 20px;
+      z-index: 2000; /* 确保在最顶层 */
+      width: 45px;
+      height: 45px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      opacity: 0;
+      pointer-events: auto;
+    }
+
+    /* 启动时的“通电”感动画 */
+    @keyframes powerOn {
+      0% { opacity: 0; filter: brightness(2) blur(10px); }
+      30% { opacity: 0.8; filter: brightness(1.2) blur(5px); }
+      35% { opacity: 0.4; }
+      40% { opacity: 1; filter: brightness(1) blur(0); }
+      100% { opacity: 1; filter: brightness(1) blur(0); }
+    }
+
+    #mainPage.power-on #backHomeBtn {
+      opacity: 1;
+      transform: translateX(0);
+      transition-delay: 0.8s;
+    }
+
+    #backHomeBtn:hover {
+      background: #fff;
+      transform: scale(1.05);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    #backHomeBtn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #333;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* 磨砂玻璃材质“点我进入”按钮 */
+    .enter-btn {
+      position: absolute;
+      top: 26.05%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16.42%;
+      height: 10.08%;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2vw;
+      min-font-size: 14px;
+      font-family: Arial, sans-serif;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 2vw;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 
+                  inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: glassPulse 3s infinite;
+      z-index: 10;
+    }
+
+    .enter-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateX(-50%) translateY(-5px);
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
+      color: #fff;
+    }
+
+    .enter-btn:active {
+      transform: translateX(-50%) scale(0.96);
+    }
+
+    @keyframes glassPulse {
+      0% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border-color: rgba(255, 255, 255, 0.25); }
+      50% { box-shadow: 0 8px 40px rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.45); }
+      100% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border-color: rgba(255, 255, 255, 0.25); }
+    }
+
+    /* 背景装饰文字 */
+    .bg-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: "Inter", "Helvetica Neue", Helvetica, Arial, "PingFang SC", sans-serif;
+      font-weight: 900;
+      font-size: 22vw;
+      color: rgba(0, 0, 0, 0.04);
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 0;
+      user-select: none;
+      letter-spacing: -0.02em;
+    }
+
+    #sceneWrapper img.bg{
+      width: 100%;
+      height: 100%;
+      object-fit: fill; /* 比例已由变量锁定，fill 确保完全契合容器且不裁剪 */
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      border-radius: 28px;
+    }
+
+    .part{
+      position: absolute;
+      z-index: 2;
+      cursor: pointer;
+      transform-origin: 50% 50%;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+      filter: brightness(1) drop-shadow(0 12px 26px rgba(0,0,0,.18));
+      will-change: transform, filter;
+      opacity: 0;
+      transform: translateY(20px) scale(0.9);
+      pointer-events: none; /* 核心修复：容器本身不拦截点击，防止覆盖背景 */
+    }
+
+    #mainPage.power-on .part {
+      animation: popIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: calc(var(--delay, 0ms) + 0.4s);
+    }
+
+    .part img {
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: auto !important; /* 仅允许点击零件图片本身 */
+    }
+
+    .part:hover{
+      transform: scale(1.15) !important;
+      z-index: 100;
+      filter: brightness(1.05) drop-shadow(0 25px 50px rgba(0,0,0,0.25));
+    }
+
+    /* --- 首页滚动轮播样式 --- */
+    .marquee-wrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120%; /* 稍微加宽防止边缘截断 */
+      z-index: 5;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      user-select: none;
+    }
+
+    .marquee-row {
+      display: flex;
+      white-space: nowrap;
+      overflow: hidden;
+      opacity: var(--marquee-opacity);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .marquee-content {
+      display: flex;
+      animation: marquee var(--marquee-speed) linear infinite;
+    }
+
+    .marquee-row:nth-child(2) .marquee-content {
+      animation-direction: reverse; /* 第二行反向滚动 */
+    }
+
+    .marquee-content span {
+      font-size: calc(var(--marquee-font-size) * 1px);
+      font-weight: 900;
+      padding: 0 60px;
+      text-transform: uppercase;
+      font-family: "Inter", sans-serif;
+      letter-spacing: 10px;
+    }
+
+    .marquee-content span.chinese {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* 退出时的散开动画 */
+    .marquee-wrapper.exit .marquee-row:nth-child(1) {
+      transform: translateY(-200px) scale(1.1);
+      opacity: 0;
+    }
+
+    .marquee-wrapper.exit .marquee-row:nth-child(2) {
+      transform: translateY(200px) scale(1.1);
+      opacity: 0;
+    }
+
+    /* --- 个人信息页面 (基于 personalinformation.png 背景图) --- */
+    .about-card-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75); /* 统一遮罩颜色 */
+      backdrop-filter: blur(20px);    /* 统一虚化程度 */
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 60000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .about-card-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .info-image-container {
+      position: relative;
+      width: min(1000px, 95vw);
+      line-height: 0;
+      transform: scale(0.9) translateY(30px);
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .about-card-overlay.active .info-image-container {
+      transform: scale(1) translateY(0);
+    }
+
+    /* 主背景图 (personalinformation.png) */
+    .info-main-img {
+      width: 100%;
+      height: auto;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+      border-radius: 12px;
+    }
+
+    /* 照片放置区域 (米白格子) */
+    .photo-slot {
+      position: absolute;
+      /* 根据 personalinformation.png 的比例进行定位 */
+      top: 15.5%;
+      left: 8.2%;
+      width: 39.5%;
+      height: 66.5%;
+      background: #fdfaf2; /* 兜底米白色 */
+      overflow: hidden;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    .photo-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: all 0.5s ease;
+    }
+
+    /* 悬浮指示效果 */
+    .photo-slot::after {
+      content: "点击切换照片";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .photo-slot:hover::after {
+      opacity: 1;
+    }
+
+    .photo-slot.switching img {
+      opacity: 0;
+      transform: scale(1.1);
+    }
+
+    /* 照片切换提示样式 */
+    .photo-click-hint {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(255, 77, 77, 0.95);
+      color: white;
+      padding: 6px 12px;
+      font-family: 'ZCOOL KuaiLe', sans-serif;
+      font-size: 14px;
+      border-radius: 8px;
+      pointer-events: none;
+      animation: hintPulse 1.5s infinite ease-in-out;
+      z-index: 15;
+      border: 2px solid #fff;
+      box-shadow: 3px 3px 0px rgba(0,0,0,0.3);
+      white-space: nowrap;
+    }
+
+    @keyframes hintPulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    /* 关闭按钮 */
+    .info-close-btn {
+      position: absolute;
+      top: -18px;
+      right: -20px;
+      width: 44px;
+      height: 44px;
+      background: #222;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 24px;
+      border: 2px solid #fff;
+      z-index: 10;
+      transition: all 0.3s ease;
+    }
+
+    .info-close-btn:hover {
+      background: #ff4444;
+      transform: rotate(90deg);
+    }
+
+    /* --- 项目精选页面 (基于 xmbg.png 背景图) --- */
+    .project-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75); /* 统一遮罩颜色 */
+      backdrop-filter: blur(20px);    /* 统一虚化程度 */
+      -webkit-backdrop-filter: blur(20px);
+      display: none; /* 核心修复：默认完全销毁，不占据任何空间 */
+      align-items: center;
+      justify-content: center;
+      z-index: 65000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .project-modal-overlay.active {
+      display: flex; /* 仅在激活时渲染 */
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .project-container {
+      position: relative;
+      width: min(1200px, 95vw);
+      line-height: 0;
+      transform: scale(0.9) translateY(40px);
+      transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .project-modal-overlay.active .project-container {
+      transform: scale(1) translateY(0);
+    }
+
+    /* 项目背景图 */
+    .project-bg-img {
+      width: 100%;
+      height: auto;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+      border-radius: 16px;
+    }
+
+    /* 项目元素 (xm1-xm4) 钉在背景图上的样式 */
+    .project-item {
+      position: absolute;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+      pointer-events: none; /* 核心修复：防止容器拦截点击，只有内部图片响应 */
+    }
+
+    .project-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+      pointer-events: auto !important; /* 仅图片响应点击 */
+    }
+
+    /* 悬停放大交互 */
+    .project-item:hover {
+      transform: scale(1.1) rotate(2deg);
+      filter: brightness(1.1) drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+      z-index: 20;
+    }
+
+    /* 具体的项目定位 (百分比，你可以根据 xmbg.png 实际位置微调) */
+    #xm-1 { top: 31%; left: 32.3%; width: 20%; }
+    #xm-2 { top: 56%; left: 15%; width: 21%; }
+    #xm-3 { top: 52%; left: 67%; width: 22%; }
+    #xm-4 { top: 35%; left: 52.3%; width: 21%; }
+
+    /* 项目关闭按钮 */
+    .project-close-btn {
+      position: absolute;
+      top: -25px;
+      right: -25px;
+      width: 50px;
+      height: 50px;
+      background: #fff;
+      color: #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 28px;
+      font-weight: bold;
+      z-index: 100;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+    }
+
+    .project-close-btn:hover {
+      background: #000;
+      color: #fff;
+      transform: scale(1.1) rotate(90deg);
+    }
+
+    /* --- 社交媒体/联系方式页面 (无背景图，直接展示元素组合) --- */
+    .contact-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75); /* 统一遮罩颜色 */
+      backdrop-filter: blur(20px);    /* 统一虚化程度 */
+      -webkit-backdrop-filter: blur(20px);
+      display: none; 
+      align-items: center;
+      justify-content: center;
+      z-index: 70000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .contact-modal-overlay.active {
+      display: flex;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .contact-container {
+      position: relative;
+      width: min(900px, 90vw);
+      display: flex;
+      flex-direction: column; /* 核心修改：改为竖向排列 */
+      justify-content: center;
+      align-items: center;
+      gap: 30px; /* 竖向元素之间的间距 */
+      padding: 50px;
+      transform: scale(0.9) translateY(40px);
+      transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .contact-modal-overlay.active .contact-container {
+      transform: scale(1) translateY(0);
+    }
+
+    /* 联系方式元素 (tk, wx, gm, qq, dh) 样式 */
+    .contact-item {
+      position: relative;
+      width: 300px; /* 进一步放大图标大小 */
+      height: auto;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .contact-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 15px 30px rgba(0,0,0,0.15));
+      pointer-events: auto !important;
+    }
+
+    /* 悬停有趣的交互：放大并跳动 */
+    .contact-item:hover {
+      transform: scale(1.3) translateY(-10px) rotate(5deg);
+      filter: brightness(1.1);
+      z-index: 20;
+    }
+
+    /* 具体的项目定位不再需要，由 Flex 自动排列 */
+
+    /* --- 点击元素后出现的字符信息图片 (二维码/账号) --- */
+    .contact-info-layer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .contact-info-layer.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: auto;
+    }
+
+    /* 字符信息图片样式：你可以通过这里的变量修改大小和位置 */
+    .info-display-img {
+      /* 增加宽度以适应更长的文字 */
+      width: 500px; 
+      height: auto;
+      border-radius: 20px;
+      /* 如果需要修改具体位置，可以调整 margin 或 transform */
+    }
+
+    /* 像素风格文字覆盖层 */
+    .pixel-text-overlay {
+      position: absolute;
+      left: calc(var(--pixel-text-x) * 1%);
+      top: calc(var(--pixel-text-y) * 1%);
+      transform: translate(-50%, -50%);
+      font-family: 'Press Start 2P', cursive;
+      font-size: calc(var(--pixel-font-size) * 1px);
+      color: var(--pixel-text-color);
+      pointer-events: auto; /* 允许鼠标交互以支持选择复制 */
+      user-select: text;    /* 明确允许文字选中 */
+      -webkit-user-select: text;
+      text-align: center;
+      white-space: nowrap;
+      z-index: 10;
+      display: none; /* 默认隐藏，由 JS 控制显示 */
+      text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.5); /* 轻微发光增强可读性 */
+      letter-spacing: -1px;
+    }
+
+    .contact-info-layer.show .pixel-text-overlay {
+      display: block;
+    }
+
+    .contact-info-layer .close-info {
+      position: absolute;
+      top: -15px;
+      right: -15px;
+      width: 36px;
+      height: 36px;
+      background: #ff4444;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+      border: 3px solid #fff;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    /* 任务详情弹窗 - 重构为大面积非跳转页面感 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.01);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 90000; /* 提升至最高层级，确保在项目精选层 (65000) 之上 */
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.4);
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: rgba(255, 255, 255, 0.85);
+      width: min(800px, 90vw);
+      min-height: 400px;
+      padding: 60px;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 50px 100px rgba(0, 0, 0, 0.2);
+      transform: translateY(40px) scale(0.9);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: left;
+      position: relative;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-title {
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 24px;
+      color: #000;
+      letter-spacing: -1px;
+    }
+
+    .modal-desc {
+      font-size: 18px;
+      line-height: 1.8;
+      color: #222;
+      margin-bottom: 40px;
+      white-space: pre-line;
+    }
+
+    .close-btn {
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 16px 48px;
+      border-radius: 20px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+
+    .close-btn:hover {
+      transform: scale(1.05);
+      background: #333;
+    }
+
+    .close-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* --- 技能包色环交互页面 --- */
+    .skills-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75); /* 统一遮罩颜色 */
+      backdrop-filter: blur(20px);    /* 统一虚化程度 */
+      -webkit-backdrop-filter: blur(20px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 75000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .skills-modal-overlay.active {
+      display: flex;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 白色圆角背景遮罩容器 */
+    .skills-content-mask {
+      position: relative;
+      /* 根据变量调整遮罩大小，用于控制裁剪区域 */
+      width: calc(var(--skill-mask-w) * 1px);
+      height: calc(var(--skill-mask-h) * 1px);
+      background: url('jnbg.png') no-repeat center center;
+      background-size: 100% 100%;
+      border-radius: 0;
+      overflow: visible; /* 改为可见，因为裁剪由内部容器负责 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      box-shadow: none;
+    }
+
+    /* 黑色屏幕内部裁剪容器 (核心) */
+    .skills-inner-screen {
+      position: absolute;
+      left: calc(var(--screen-inner-x) * 1%);
+      top: calc(var(--screen-inner-y) * 1%);
+      width: calc(var(--screen-inner-w) * 1%);
+      height: calc(var(--screen-inner-h) * 1%);
+      overflow: hidden; /* 这里负责裁剪元素 */
+      pointer-events: none; /* 穿透，让点击能到达元素 */
+      z-index: 5;
+    }
+
+    /* 将原本在 skills-content-mask 里的内容移动到这个内部容器 */
+    .skills-inner-screen .rotary-wrapper,
+    .skills-inner-screen .skill-detail-panel {
+      pointer-events: auto;
+    }
+
+    /* 左侧详情介绍面板 */
+    .skill-detail-panel {
+      position: absolute;
+      left: 5%;
+      top: 50%;
+      transform: translateY(-50%) translateX(-120%); /* 初始在左侧隐藏 */
+      width: 350px;
+      height: 70%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      border: 4px solid #fff;
+      border-radius: 20px;
+      padding: 30px;
+      z-index: 50;
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      pointer-events: none;
+    }
+
+    .skill-detail-panel.active {
+      transform: translateY(-50%) translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .skill-detail-title {
+      font-family: 'ZCOOL KuaiLe', 'Press Start 2P', cursive !important;
+      font-weight: normal !important;
+      font-size: 28px;
+      color: #ff4d4d;
+      border-bottom: 2px solid #fff;
+      padding-bottom: 10px;
+    }
+
+    .skill-detail-content {
+      font-family: 'ZCOOL KuaiLe', 'Press Start 2P', cursive !important;
+      font-weight: normal !important;
+      font-size: 18px;
+      color: #fff;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    /* 技能包专属退出元件 (jnt.png) */
+    .skills-exit-btn {
+      position: absolute;
+      /* --- 退出按键位置与大小调节区 --- */
+      bottom: 7%;     /* 距离底部距离 */
+      right: 22.1%;    /* 距离右侧距离 */
+      width: 81px;     /* 宽度 */
+      height: 77px;    /* 高度 */
+      /* ----------------------------- */
+      background: url('jnt.png') no-repeat center center;
+      background-size: contain;
+      cursor: pointer;
+      z-index: 100;
+      transition: transform 0.2s ease;
+    }
+
+    .skills-exit-btn:hover {
+      transform: scale(1.1);
+      filter: brightness(1.2);
+    }
+
+    /* 右侧色环旋转容器 */
+    .rotary-wrapper {
+      position: absolute;
+      right: -200px; /* 偏向右侧 */
+      top: 50%;
+      transform: translateY(-50%);
+      width: 800px;
+      height: 800px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .skills-modal-overlay.active .rotary-wrapper {
+      transform: translateY(-50%) scale(1);
+    }
+
+    /* 旋转载体 */
+    .wheel {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      will-change: transform;
+    }
+
+    /* 像素节点（板块）*/
+    .pixel-node {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: calc(var(--skill-node-w) * 1px);
+      height: calc(var(--skill-node-h) * 1px);
+      margin-top: calc(var(--skill-node-h) * -0.5px);
+      margin-left: calc(var(--skill-node-w) * -0.5px);
+      background: transparent; /* 去掉背景 */
+      border: none;           /* 去掉边框 */
+      box-shadow: none;       /* 去掉阴影 */
+      display: flex;
+      align-items: center;
+      justify-content: center; /* 改为居中，因为现在只有图标 */
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 10;
+      image-rendering: pixelated;
+    }
+
+    .pixel-node.active {
+      transform: scale(var(--skill-active-scale)) translate(-20px);
+    }
+
+    /* 节点内的图片元件样式 */
+    .pixel-node-img {
+      width: 100px; /* 进一步放大图片元件 */
+      height: 100px;
+      background: transparent;
+      border: none;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .pixel-node-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); /* 增加轻微发光增强识别 */
+    }
+
+    .pixel-node.active .pixel-node-img {
+      border: none;
+      background: transparent;
+      filter: drop-shadow(0 0 10px rgba(255,77,77,0.4)); /* 激活时发光变红 */
+    }
+
+    /* 引导系统 */
+    #onboarding {
+      position: absolute;
+      left: 5%;
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: center;
+      z-index: 100;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+
+    .mouse-icon {
+      width: 50px;
+      height: 75px;
+      border: 5px solid #000;
+      border-radius: 25px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+
+    .mouse-wheel {
+      width: 8px;
+      height: 12px;
+      background: #ff4d4d;
+      position: absolute;
+      left: 50%;
+      margin-left: -4px;
+      top: 15px;
+      animation: scroll-hint 1.5s infinite;
+    }
+
+    @keyframes scroll-hint {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(25px); opacity: 0; }
+    }
+
+    .hint-text {
+      background: transparent;
+      color: #fff;
+      padding: 10px 20px;
+      font-weight: normal !important;
+      text-transform: uppercase;
+      font-family: 'ZCOOL KuaiLe', 'Press Start 2P', cursive !important;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+
+    /* --- 实习经历页面 (基于 sxbg.png 背景图) --- */
+    .internship-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 80000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .internship-modal-overlay.active {
+      display: flex;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .internship-container {
+      position: relative;
+      width: min(650px, 85vw); /* 缩小背景容器 */
+      aspect-ratio: 832 / 1080;
+      background: url('sxbg.png') no-repeat center center;
+      background-size: contain;
+      box-sizing: border-box;
+      font-family: 'ZCOOL KuaiLe', sans-serif;
+      color: #1a1a1a;
+      transform: scale(0.9) translateY(30px);
+      transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      perspective: 1000px; /* 为翻页动效添加透视 */
+    }
+
+    .internship-modal-overlay.active .internship-container {
+      transform: scale(1) translateY(0);
+    }
+
+    /* 实习内容排版 */
+    .intern-page {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 10% 12% 10% 15%; /* 调整内边距 */
+      box-sizing: border-box;
+      display: none;
+      flex-direction: column;
+      backface-visibility: hidden;
+      transform-origin: center;
+    }
+
+    .intern-page.active {
+      display: flex;
+    }
+
+    /* 翻页动画逻辑：移除旧的位移动效 */
+    .intern-page {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 10% 12% 10% 15%;
+      box-sizing: border-box;
+      display: none;
+      flex-direction: column;
+    }
+
+    .intern-page.active {
+      display: flex;
+    }
+
+    /* 打字机光标效果 */
+    .typewriter-cursor::after {
+      content: '|';
+      animation: blink 0.8s infinite;
+      margin-left: 2px;
+      color: #ff4d4d;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .intern-header {
+      font-size: 32px; /* 调大字号 */
+      font-weight: 900;
+      margin-bottom: 5px;
+      letter-spacing: 2px;
+      line-height: 1.2;
+    }
+
+    .intern-sub-header {
+      font-size: 18px; /* 调大字号 */
+      margin-bottom: 25px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .intern-sub-header::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: #333;
+      opacity: 0.2;
+    }
+
+    .intern-section {
+      margin-bottom: 20px; /* 恢复间距 */
+    }
+
+    .intern-label {
+      font-size: 14px; /* 调大字号 */
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .intern-title {
+      font-size: 20px; /* 调大字号 */
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .intern-desc-list {
+      font-size: 15px; /* 调大字号 */
+      line-height: 1.6;
+      color: #444;
+      margin-top: 10px;
+    }
+
+    .intern-desc-item {
+      margin-bottom: 8px;
+      display: flex;
+      gap: 8px;
+    }
+
+    /* 灰色便签区域 (左下角) */
+    .gray-note {
+      position: absolute;
+      bottom: 12%;
+      left: 8%;
+      width: 55%;
+      background: #e5e5e5;
+      padding: 20px;
+      font-size: 14px; /* 调大字号 */
+      line-height: 1.6;
+      box-shadow: 3px 3px 10px rgba(0,0,0,0.05);
+      border-left: 3px solid #999;
+      transform: rotate(-1deg);
+    }
+
+    /* Logo 图片区域 (右下角) */
+    .intern-logo-area {
+      position: absolute;
+      bottom: 12%;
+      right: 12%;
+      width: 120px;
+      height: 80px;
+      background: rgba(0,0,0,0.02);
+      border: 1px dashed #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .intern-logo-area img {
+      max-width: 80%;
+      max-height: 80%;
+      object-fit: contain;
+    }
+
+    /* 切换按钮 */
+    .intern-switch-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #fff;
+      border: 3px solid #000;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 3px 3px 0px #000;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+    }
+
+    /* 第一页时的位置：在右边 */
+    .intern-switch-btn.at-right {
+      right: -50px;
+      left: auto;
+    }
+
+    /* 第二页时的位置：在左边 */
+    .intern-switch-btn.at-left {
+      left: -50px;
+      right: auto;
+    }
+
+    .intern-switch-btn:hover {
+      background: #ff4d4d;
+      color: #fff;
+    }
+
+    .intern-switch-btn:hover {
+      transform: translateY(-52%) translateX(2px);
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .intern-switch-btn:active {
+      transform: translateY(-48%) translateX(0px);
+      box-shadow: 0px 0px 0px #000;
+    }
+
+    .tooltip{
+      display: none; /* 隐藏旧的 tooltip，由弹窗替代 */
+    }
+
+    /* --- 首帧文字排版与动画 --- */
+    .typography-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+      font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    /* 左侧文字容器 */
+    .typo-left {
+      position: absolute;
+      left: calc(var(--typo-padding-x) * 1%);
+      top: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: calc(var(--typo-padding-y) * 1px) 0;
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+    }
+
+    /* 右侧文字容器 */
+    .typo-right {
+      position: absolute;
+      right: calc(var(--typo-padding-x) * 1%);
+      top: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: calc(var(--typo-padding-y) * 1px) 0;
+      align-items: flex-end;
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+    }
+
+    /* 退出动画状态：向两侧移出 */
+    .typography-container.exit .typo-left {
+      transform: translateX(-150%);
+      opacity: 0;
+    }
+    .typography-container.exit .typo-right {
+      transform: translateX(150%);
+      opacity: 0;
+    }
+
+    /* 具体文字项样式 */
+    .typo-item {
+      color: #000;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    /* 左上角标题 */
+    .typo-item.header {
+      font-weight: 1000;
+      font-size: calc(var(--font-header) * 1.5px);
+      letter-spacing: 5px;
+    }
+    .typo-item.header .line {
+      width: 40px;
+      height: 4px;
+      background: #000;
+      margin-bottom: 12px;
+    }
+
+    /* 左侧中间大标语 */
+    .typo-item.main-quote {
+      font-weight: 900;
+      font-size: calc(var(--font-quote) * 1.3px);
+      letter-spacing: 0px;
+    }
+
+    /* 左下角说明 */
+    .typo-item.footer {
+      font-weight: 700;
+      font-size: calc(var(--font-footer) * 1px);
+    }
+    .typo-item.footer .line {
+      width: 30px;
+      height: 3px;
+      background: #000;
+      margin-top: 12px;
+    }
+
+    /* 右上角导航 */
+    .typo-nav {
+      display: flex;
+      gap: 30px;
+      font-weight: 500;
+      font-size: calc(var(--font-nav) * 1.2px);
+      color: #333;
+    }
+
+    /* 右侧垂直文字 */
+    .typo-item.vertical-text {
+      writing-mode: vertical-rl;
+      font-weight: 600;
+      font-size: calc(var(--font-vertical) * 1px);
+      letter-spacing: 2px;
+      color: #444;
+    }
+
+    /* 右下角日期 */
+    .typo-item.date {
+      font-weight: 600;
+      font-size: calc(var(--font-date) * 1.5px);
+      font-family: "Courier New", Courier, monospace;
+    }
+
+    /* 导航栏样式 - 统一高度 */
+    #topNav {
+      position: absolute;
+      top: calc(58 / var(--design-h) * 100%);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 8px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    .nav-item {
+      height: 28px; /* 导航项高度 */
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.6);
+      transform: translateY(-2px);
+      color: #000;
+    }
+
+    .nav-item.highlight-part {
+      background: #000;
+      color: #fff;
+    }
+
+    /* 零件强制放大类 - 增加权重确保生效 */
+    .part.force-hover {
+      transform: translateY(0) scale(1.15) !important;
+      z-index: 100 !important;
+      filter: brightness(1.1) drop-shadow(0 25px 50px rgba(0,0,0,0.3)) !important;
+      opacity: 1 !important;
+    }
+
+    @keyframes popIn{
+      0%{ opacity: 0; transform: translateY(20px) scale(0.9); filter: blur(5px); }
+      100%{ opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- 开场序列 -->
+  <div id="entry-sequence">
+    <div class="responsive-container">
+      <div class="entry-layer" id="layer-in">
+        <img src="in.png" alt="首帧" />
+
+        <!-- 首页背景滚动文字轮播 -->
+        <div class="marquee-wrapper" id="marqueeWrapper">
+          <div class="marquee-row">
+            <div class="marquee-content">
+              <span>QIUXIAOMIN</span><span>QIUXIAOMIN</span><span>QIUXIAOMIN</span><span>QIUXIAOMIN</span><span>QIUXIAOMIN</span>
+              <span>QIUXIAOMIN</span><span>QIUXIAOMIN</span><span>QIUXIAOMIN</span><span>QIUXIAOMIN</span><span>QIUXIAOMIN</span>
+            </div>
+          </div>
+          <div class="marquee-row">
+            <div class="marquee-content">
+              <span class="chinese">個人作品集</span><span class="chinese">個人作品集</span><span class="chinese">個人作品集</span><span class="chinese">個人作品集</span><span class="chinese">個人作品集</span>
+              <span class="chinese">個人作品集</span><span class="chinese">個人作品集</span><span class="chinese">個人作品集</span><span class="chinese">個人作品集</span><span class="chinese">個人作品集</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 首页艺术化文字排版 (超现实风格) -->
+        <div class="typography-container" id="typoContainer">
+          <!-- 左侧排版：包含标题、大标语、页脚说明 -->
+          <div class="typo-left">
+            <div class="typo-item header">
+              <div class="line"></div>
+              PORTFOLIO
+            </div>
+            <div class="typo-item main-quote">
+              “個人<br>作品集”
+            </div>
+            <div class="typo-item footer">
+              PERSONAL<br>POFOLIO WEBSITE
+              <div class="line"></div>
+            </div>
+          </div>
+
+          <!-- 右侧排版：包含导航、垂直文字、日期 -->
+          <div class="typo-right">
+            <nav class="typo-nav">
+              <span>Projects</span>
+              <span>Contact</span>
+              <span>About</span>
+            </nav>
+            <div class="typo-item vertical-text">
+              DESIGN BY QIU XIAO MIN
+            </div>
+            <div class="typo-item date">
+              2026
+            </div>
+          </div>
+        </div>
+
+        <button class="enter-btn" id="enterBtn">点击了解</button>
+      </div>
+      <div class="entry-layer" id="layer-video">
+        <video id="bgVideo" preload="auto">
+          <source src="bgvideo2.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="entry-layer" id="layer-back">
+        <video id="backVideo" preload="auto">
+          <source src="back.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="entry-layer" id="layer-out">
+        <div class="sync-container">
+          <img class="out-bg" src="out.png" alt="尾帧" />
+          <div class="page" id="mainPage">
+            <!-- 返回按钮 -->
+            <div class="back-home-btn" id="backHomeBtn" title="返回首页">
+              <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </div>
+
+            <div class="scene-wrapper" id="sceneWrapper">
+              <img class="bg" src="bg.png" alt="场景背景" />
+              
+              <!-- 导航栏 -->
+              <nav class="top-nav" id="topNav">
+                <div class="nav-item" data-target="关于我">关于我</div>
+                <div class="nav-item" data-target="社交媒体">社交媒体</div>
+                <div class="nav-item" data-target="技能包">技能包</div>
+                <div class="nav-item" data-target="实习经历">实习经历</div>
+                <div class="nav-item" data-target="项目精选">项目精选</div>
+                <div class="nav-item" data-target="兴趣爱好">兴趣爱好</div>
+              </nav>
+
+              <!-- 所有零件的 top/left/width 现在相对于背景图的百分比，实现完美缩放对齐 -->
+              <div class="part" id="part-关于我" data-name="关于我" data-desc="场景的核心角色，采用Q版粘土风格化设计，增加了交互的趣味性与亲和力。" style="top: 40.17%; left: 81.33%; width: 10.20%; --delay: 280ms;">
+                <img src="man.png" alt="关于我" />
+              </div>
+
+              <div class="part" id="part-社交媒体" data-name="社交媒体" data-desc="灵感来源于日常办公场景，磨砂质感的咖啡杯与简约的桌面，构筑了一个宁静的创作空间。" style="top: 55.89%; left: 41.83%; width: 17.43%; --delay: 120ms;">
+                <img src="coffee.png" alt="社交媒体" />
+              </div>
+
+              <div class="part" id="part-技能包" data-name="技能包" data-desc="细节决定成败。通过对手工工具的细腻刻画，展现对工艺与造物的极致追求。" style="top: 32.77%; left: 15.33%; width: 15.02%; --delay: 200ms;">
+                <img src="art.png" alt="技能包" />
+              </div>
+
+              <div class="part" id="part-实习经历" data-name="实习经历" data-desc="收纳与秩序的艺术。货架上的每一个小物件都经过精心设计，构成丰富的场景细节。" style="top: 69.67%; left: 73.08%; width: 25.67%; --delay: 360ms;">
+                <img src="shelf.png" alt="实习经历" />
+              </div>
+
+              <div class="part" id="part-项目精选" data-name="项目精选" data-desc="创意迸发的阵地。白板记录着每一个伟大的构思，是作品集创作过程的缩影。" style="top: 10.39%; left: 29.50%; width: 20.35%; --delay: 440ms;">
+                <img src="board.png" alt="项目精选" />
+              </div>
+
+              <div class="part" id="part-兴趣爱好" data-name="兴趣爱好" data-desc="这里展示了关于运动健身相关的3D建模与交互设计，旨在传达活力与健康的生活态度。" style="top: 72.74%; left: 2.42%; width: 17.20%; --delay: 40ms;">
+                <img src="fitness.png" alt="兴趣爱好" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 个人信息卡片弹窗 (基于 personalinformation.png) -->
+  <div class="about-card-overlay" id="aboutCardOverlay">
+    <div class="info-image-container">
+      <div class="info-close-btn" id="aboutCardClose">×</div>
+      
+      <!-- 主背景图 -->
+      <img src="personalinformation.png" alt="个人信息背景" class="info-main-img" />
+
+      <!-- 照片放置区域 (米白格子) -->
+      <div class="photo-slot" id="photoFrame" title="点击切换照片">
+        <!-- 默认展示的照片，你可以修改这里的 src -->
+        <img src="qxm1.jpg" alt="个人照片" id="aboutCardPhoto" />
+        <!-- 照片切换提示 -->
+        <div class="photo-click-hint" id="photoHint">CLICK TO SWITCH | 点击切换</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 实习经历弹窗 (基于 sxbg.png) -->
+  <div class="internship-modal-overlay" id="internshipModalOverlay">
+    <div class="internship-container">
+      <div class="project-close-btn" id="internshipModalClose">×</div>
+      
+      <!-- 实习内容展示区 (打字机注入) -->
+      <div class="intern-page active" id="internContentArea">
+        <div class="intern-header" id="internTitle"></div>
+        <div class="intern-sub-header" id="internDate"></div>
+        
+        <div class="intern-section">
+          <div class="intern-label">Company</div>
+          <div class="intern-title" id="internCompany"></div>
+          <div class="intern-desc-list" id="internDesc1"></div>
+        </div>
+        
+        <div class="intern-section">
+          <div class="intern-label">Role</div>
+          <div class="intern-title" id="internRole"></div>
+          <div class="intern-desc-list" id="internDesc2"></div>
+        </div>
+
+        <div class="gray-note" id="internNote"></div>
+
+        <div class="intern-logo-area">
+          <img src="" alt="Company Logo" id="internLogo" />
+        </div>
+      </div>
+
+      <!-- 切换按钮 -->
+      <div class="intern-switch-btn at-right" id="internSwitchBtn">→</div>
+    </div>
+  </div>
+
+  <!-- 项目精选弹窗 (基于 xmbg.png) -->
+  <div class="project-modal-overlay" id="projectModalOverlay">
+    <div class="project-container">
+      <div class="project-close-btn" id="projectModalClose">×</div>
+      
+      <!-- 项目背景图 -->
+      <img src="xmbg.png" alt="项目精选背景" class="project-bg-img" />
+
+      <!-- 项目内容元素 (xm1-xm4) -->
+      <div class="project-item" id="xm-1" data-title="项目精选 01" data-desc="这是项目 1 的详细描述内容，你可以在 JavaScript 中修改这些文案。">
+        <img src="xm1.png" alt="项目 1" />
+      </div>
+      <div class="project-item" id="xm-2" data-title="项目精选 02" data-desc="这是项目 2 的详细描述内容。">
+        <img src="xm2.png" alt="项目 2" />
+      </div>
+      <div class="project-item" id="xm-3" data-title="项目精选 03" data-desc="这是项目 3 的详细描述内容。">
+        <img src="xm3.png" alt="项目 3" />
+      </div>
+      <div class="project-item" id="xm-4" data-title="项目精选 04" data-desc="这是项目 4 的详细描述内容。">
+        <img src="xm4.png" alt="项目 4" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 社交媒体/联系方式弹窗 (无背景，直接展示图标组合) -->
+  <div class="contact-modal-overlay" id="contactModalOverlay">
+    <div class="contact-container">
+      <div class="project-close-btn" id="contactModalClose">×</div>
+      
+      <!-- 联系方式可点击元素 (tk, wx, gm, qq, dh) -->
+      <div class="contact-item" id="contact-tk" data-info-img="dhin.png">
+        <img src="tk.png" alt="TikTok" />
+      </div>
+      <div class="contact-item" id="contact-wx" data-info-img="dhin.png">
+        <img src="wx.png" alt="WeChat" />
+      </div>
+      <div class="contact-item" id="contact-gm" data-info-img="dhin.png">
+        <img src="gm.png" alt="Gmail" />
+      </div>
+      <div class="contact-item" id="contact-qq" data-info-img="dhin.png">
+        <img src="qq.png" alt="QQ" />
+      </div>
+      <div class="contact-item" id="contact-dh" data-info-img="dhin.png">
+        <img src="dh.png" alt="Phone" />
+      </div>
+
+      <!-- 字符信息图片层 (点击图标后弹出，如二维码) -->
+      <div class="contact-info-layer" id="contactInfoLayer">
+        <div class="close-info" id="closeInfoLayer">×</div>
+        <img src="" alt="账号信息" id="infoDisplayImg" class="info-display-img" />
+        <!-- 像素文字覆盖层 -->
+        <div id="pixelTextOverlay" class="pixel-text-overlay">138-0000-0000</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 技能包弹窗 (色环手摇电话动效) -->
+  <div class="skills-modal-overlay" id="skillsModalOverlay">
+    <!-- 退出元件 (jnt.png) -->
+    <div class="skills-exit-btn" id="skillsModalClose"></div>
+    
+    <div class="skills-content-mask">
+      <!-- 新增：黑色屏幕内部裁剪层 -->
+      <div class="skills-inner-screen">
+        <!-- 左侧详情面板 -->
+        <div class="skill-detail-panel" id="skillDetailPanel">
+          <div class="skill-detail-title" id="skillDetailTitle">技能名称</div>
+          <div class="skill-detail-content" id="skillDetailContent">这里是技能的详细介绍内容...</div>
+        </div>
+
+        <div class="rotary-wrapper">
+          <div class="wheel" id="skillWheel">
+              <!-- 自动生成 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 引导系统 (保持在背景图层级) -->
+      <div id="skillOnboarding">
+          <div id="onboarding">
+            <div class="mouse-icon"><div class="mouse-wheel"></div></div>
+            <div class="hint-text">滚动滑轮 探索<br>点击元素 查看</div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-text">PORTFOLIO</div>
+
+  <!-- 弹窗结构 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content">
+      <div class="modal-title" id="modalTitle">任务说明</div>
+      <div class="modal-desc" id="modalDesc">内容加载中...</div>
+      <button class="close-btn" id="closeBtn">确定</button>
+    </div>
+  </div>
+
+  <script>
+    const entrySequence = document.getElementById('entry-sequence');
+    const enterBtn = document.getElementById('enterBtn');
+    const typoContainer = document.getElementById('typoContainer');
+    const marqueeWrapper = document.getElementById('marqueeWrapper');
+    const bgVideo = document.getElementById('bgVideo');
+    const backVideo = document.getElementById('backVideo');
+    const layerIn = document.getElementById('layer-in');
+    const layerVideo = document.getElementById('layer-video');
+    const layerBack = document.getElementById('layer-back');
+    const layerOut = document.getElementById('layer-out');
+    const mainPage = document.getElementById('mainPage');
+    const backHomeBtn = document.getElementById('backHomeBtn');
+
+    const sceneWrapper = document.getElementById('sceneWrapper');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+    const closeBtn = document.getElementById('closeBtn');
+
+    /* --- 个人信息卡片相关逻辑 --- */
+    const aboutCardOverlay = document.getElementById('aboutCardOverlay');
+    const aboutCardClose = document.getElementById('aboutCardClose');
+    const photoFrame = document.getElementById('photoFrame');
+    const aboutCardPhoto = document.getElementById('aboutCardPhoto');
+    const photoHint = document.getElementById('photoHint');
+
+    // 备选照片库，你可以在这里添加更多图片路径
+    const photoList = [
+      'qxm1.jpg',
+      'qxm2.jpg',
+      'qxm3.jpg'
+    ];
+    let currentPhotoIndex = 0;
+
+    // 打开个人信息卡片
+    function openAboutCard() {
+      aboutCardOverlay.classList.add('active');
+    }
+
+    // 关闭个人信息卡片
+    function closeAboutCard() {
+      aboutCardOverlay.classList.remove('active');
+    }
+
+    // 切换照片动效
+    function switchPhoto(e) {
+      if (e) e.stopPropagation(); // 阻止事件冒泡，防止误触底层或其他层
+      
+      // 用户点击后隐藏提示
+      if (photoHint) {
+        photoHint.style.display = 'none';
+      }
+      
+      photoFrame.classList.add('switching');
+      
+      setTimeout(() => {
+        currentPhotoIndex = (currentPhotoIndex + 1) % photoList.length;
+        aboutCardPhoto.src = photoList[currentPhotoIndex];
+        
+        // 图片加载后滑入
+        aboutCardPhoto.onload = () => {
+          photoFrame.classList.remove('switching');
+        };
+      }, 500);
+    }
+
+    aboutCardClose.addEventListener('click', closeAboutCard);
+    aboutCardOverlay.addEventListener('click', (e) => {
+      if (e.target === aboutCardOverlay) closeAboutCard();
+    });
+    photoFrame.addEventListener('click', switchPhoto);
+
+    // 零件详细内容配置 (方便后续调整)
+    const partDetails = {
+      "关于我": {
+        title: "关于我 | About Me",
+        content: "你好！我是一名热衷于 3D 视觉表达与交互开发的创意工程师。擅长将 C4D 粘土风格与现代 Web 技术结合，打造沉浸式的数字体验。在这个场景中，我将自己抽象为一个粘土角色，象征着对技术的好奇心与对设计的热爱。"
+      },
+      "社交媒体": {
+        title: "社交媒体 | Social Connect",
+        content: "在这个快节奏的时代，我喜欢在安静的角落通过社交媒体分享灵感。点击这里可以找到我的 Behance、Dribbble 以及个人博客，让我们一起探讨设计的无限可能。"
+      },
+      "技能包": {
+        title: "技能包 | Skill Stack",
+        content: "我的技能树涵盖了从视觉设计到前端开发的多个领域：\n- UI/UX Design (Figma / C4D)\n- Frontend Dev (React / Vue / Three.js)\n- Motion Design (GSAP / AE)\n追求像素级还原与流畅的交互体验是我的准则。"
+      },
+      "实习经历": {
+        title: "实习经历 | Experience",
+        content: "曾在多家顶尖互联网公司实习，参与过百万级用户的产品迭代。在这些经历中，我不仅磨炼了技术，更学会了如何从用户视角出发解决复杂的设计难题。"
+      },
+      "项目精选": {
+        title: "项目精选 | Projects",
+        content: "这里收录了我最具代表性的作品，包括视觉包装、交互原型以及完整的 Web 项目。每一个项目都是一次对未知的探索与对自我的突破。"
+      },
+      "兴趣爱好": {
+        title: "兴趣爱好 | Interests",
+        content: "除了代码与设计，运动与健身也是我生活中不可或缺的一部分。它不仅带给我强健的体魄，更教会了我坚持与自律。正如建模一样，细节的雕琢需要恒久的耐心。"
+      }
+    };
+
+    // 开场序列逻辑
+    enterBtn.addEventListener('click', () => {
+      playClickSound();
+      
+      // 0. 启动文字左右移出动画 + 轮播文字散开
+      typoContainer.classList.add('exit');
+      marqueeWrapper.classList.add('exit');
+      
+      // 1. 隐藏首帧层
+      setTimeout(() => {
+        layerIn.style.display = 'none';
+        
+        // 2. 显示并播放视频层
+        layerVideo.style.display = 'block';
+        bgVideo.currentTime = 0;
+        bgVideo.play().catch(err => {
+          console.error("视频播放被阻止:", err);
+          showHall();
+        });
+      }, 400); // 稍微等待文字移出动画开始
+    });
+
+    // 视频结束，进入大厅
+    bgVideo.addEventListener('ended', () => {
+      showHall();
+    });
+
+    function showHall() {
+      // 1. 隐藏视频层
+      layerVideo.style.display = 'none';
+      
+      // 2. 显示大厅层
+      layerOut.style.display = 'block';
+      layerOut.style.opacity = '1';
+      layerOut.style.pointerEvents = 'auto';
+      
+      // 3. 启动大厅 UI 动画
+      setTimeout(() => {
+        mainPage.classList.add('power-on');
+      }, 100);
+    }
+
+    // 返回首页逻辑
+    backHomeBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); 
+      playClickSound();
+      
+      // 1. 隐藏交互大厅 UI
+      mainPage.classList.remove('power-on');
+      
+      setTimeout(() => {
+        // 2. 彻底隐藏大厅图层，杜绝闪烁
+        layerOut.style.display = 'none';
+        layerOut.style.opacity = '0';
+        layerOut.style.pointerEvents = 'none';
+        
+        // 3. 显示并播放回场视频
+        layerBack.style.display = 'block';
+        backVideo.currentTime = 0;
+        backVideo.play().catch(err => {
+          console.error("回场视频播放失败:", err);
+          returnToStart();
+        });
+      }, 600);
+    });
+
+    // 监听回场视频结束
+    backVideo.addEventListener('ended', () => {
+      returnToStart();
+    });
+
+    function returnToStart() {
+      // 1. 隐藏视频层
+      layerBack.style.display = 'none';
+      
+      // 2. 恢复首帧
+      layerIn.style.display = 'flex';
+      
+      // 3. 恢复文字排版位置（从两边返回）
+      setTimeout(() => {
+        typoContainer.classList.remove('exit');
+        marqueeWrapper.classList.remove('exit');
+      }, 50);
+      
+      // 4. 重置所有视频状态
+      bgVideo.pause();
+      bgVideo.currentTime = 0;
+      backVideo.pause();
+      backVideo.currentTime = 0;
+    }
+
+    // 使用 Web Audio API 生成简洁的反馈音效
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playClickSound() {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(580, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    }
+
+    // 交互逻辑
+    document.querySelectorAll('.part').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetName = el.getAttribute('data-name');
+        
+        // 拦截“社交媒体”点击
+        if (targetName === '社交媒体') {
+          playClickSound();
+          openContactModal();
+          return;
+        }
+
+        openModal(el);
+      });
+    });
+
+    // 导航栏联动逻辑
+    document.querySelectorAll('.nav-item').forEach(navItem => {
+      const targetName = navItem.getAttribute('data-target');
+      const targetPart = document.getElementById(`part-${targetName}`);
+
+      navItem.addEventListener('mouseenter', () => {
+        if (targetPart) {
+          targetPart.classList.add('force-hover');
+        }
+      });
+
+      navItem.addEventListener('mouseleave', () => {
+        if (targetPart) {
+          targetPart.classList.remove('force-hover');
+        }
+      });
+
+      navItem.addEventListener('click', () => {
+          // 拦截“关于我”导航点击
+          if (targetName === '关于我') {
+            playClickSound();
+            openAboutCard();
+            return;
+          }
+          // 拦截“实习经历”导航点击
+          if (targetName === '实习经历') {
+            playClickSound();
+            openInternshipModal();
+            return;
+          }
+          // 拦截“技能包”导航点击
+          if (targetName === '技能包') {
+            playClickSound();
+            openSkillsModal();
+            return;
+          }
+          // 拦截“社交媒体”导航点击
+          if (targetName === '社交媒体') {
+            playClickSound();
+            openContactModal();
+            return;
+          }
+          // 拦截“项目精选”导航点击
+          if (targetName === '项目精选') {
+            playClickSound();
+            openProjectModal();
+            return;
+          }
+          if (targetPart) {
+            openModal(targetPart);
+          }
+        });
+    });
+
+    /* --- 社交媒体/联系方式相关逻辑 --- */
+    const contactModalOverlay = document.getElementById('contactModalOverlay');
+    const contactModalClose = document.getElementById('contactModalClose');
+    const contactItems = document.querySelectorAll('.contact-item');
+    const contactInfoLayer = document.getElementById('contactInfoLayer');
+    const infoDisplayImg = document.getElementById('infoDisplayImg');
+    const closeInfoLayer = document.getElementById('closeInfoLayer');
+    const pixelTextOverlay = document.getElementById('pixelTextOverlay');
+
+    // 社交媒体对应的像素文字内容，你可以在这里直接修改
+    const contactPixelTexts = {
+      "contact-tk": "1556670776",
+      "contact-wx": "qiiiiiu2580",
+      "contact-gm": "qiu3428210863@gmail.com",
+      "contact-qq": "3138610838",
+      "contact-dh": "177-5873-8557"
+    };
+
+    function openContactModal() {
+      contactModalOverlay.style.display = 'flex';
+      contactModalOverlay.offsetHeight;
+      contactModalOverlay.classList.add('active');
+    }
+
+    function closeContactModal() {
+      contactModalOverlay.classList.remove('active');
+      contactInfoLayer.classList.remove('show'); // 同时关闭信息层
+      setTimeout(() => {
+        if (!contactModalOverlay.classList.contains('active')) {
+          contactModalOverlay.style.display = 'none';
+        }
+      }, 600);
+    }
+
+    contactModalClose.addEventListener('click', closeContactModal);
+    contactModalOverlay.addEventListener('click', (e) => {
+      if (e.target === contactModalOverlay) closeContactModal();
+    });
+
+    contactItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        const infoImgSrc = item.getAttribute('data-info-img');
+        const itemId = item.id;
+        
+        if (infoImgSrc) {
+          infoDisplayImg.src = infoImgSrc;
+          
+          // 设置对应的像素文字
+          if (contactPixelTexts[itemId]) {
+            pixelTextOverlay.textContent = contactPixelTexts[itemId];
+            pixelTextOverlay.style.display = 'block';
+          } else {
+            pixelTextOverlay.style.display = 'none';
+          }
+          
+          contactInfoLayer.classList.add('show');
+        }
+      });
+    });
+
+    closeInfoLayer.addEventListener('click', (e) => {
+      e.stopPropagation();
+      contactInfoLayer.classList.remove('show');
+    });
+
+    /* --- 实习经历相关逻辑 --- */
+    const internshipModalOverlay = document.getElementById('internshipModalOverlay');
+    const internshipModalClose = document.getElementById('internshipModalClose');
+    const internSwitchBtn = document.getElementById('internSwitchBtn');
+    
+    // 获取打字机注入容器
+    const internTitle = document.getElementById('internTitle');
+    const internDate = document.getElementById('internDate');
+    const internCompany = document.getElementById('internCompany');
+    const internDesc1 = document.getElementById('internDesc1');
+    const internRole = document.getElementById('internRole');
+    const internDesc2 = document.getElementById('internDesc2');
+    const internNote = document.getElementById('internNote');
+    const internLogo = document.getElementById('internLogo');
+
+    // 实习经历数据
+    const internData = [
+      {
+        title: "INTERNSHIP\nEXPERIENCE 01",
+        date: "2024.03 - 2024.09",
+        company: "XX 创意科技设计有限公司",
+        desc1: ["→ 负责公司移动端产品的界面视觉设计与原型搭建。", "→ 配合前端工程师完成设计稿的 100% 像素级还原。", "→ 参与 3D 粘土风格品牌视觉包的建模与渲染工作。"],
+        role: "UI / 交互设计师实习生",
+        desc2: ["→ 制定 UI 设计规范，提升团队设计效率。", "→ 进行用户调研与交互链路优化。"],
+        note: "Túnel hacia ti (revisitado)\nGabriel Carrillo de Icaza / 1:30 pm\n\nProyector Como Oráculo:\nRevelaciones en Super 8mm\nMichael Ramos-Araizaga / 4 pm",
+        logo: ""
+      },
+      {
+        title: "INTERNSHIP\nEXPERIENCE 02",
+        date: "2023.07 - 2024.02",
+        company: "YY 互联网大厂体验设计部",
+        desc1: ["→ 协助设计师完成 B 端后台系统的设计规范制定。", "→ 负责产品活动页面的视觉排版与动效设计。", "→ 进行竞品分析并产出高质量的设计调研报告。"],
+        role: "交互视觉设计实习生",
+        desc2: ["→ 优化核心业务模块的交互体验。", "→ 产出多份高质量设计复盘文档。"],
+        note: "Un mensaje no para ti,\nalgo dentro de dentro de ti\n(remaing nansi) / 5 pm\n\nno pante no animal\nPenriano, lela / 7 pm",
+        logo: ""
+      }
+    ];
+
+    let currentInternPage = 0;
+    let isTyping = false;
+
+    function typeWriter(element, text, speed = 30) {
+      return new Promise(resolve => {
+        element.innerHTML = "";
+        element.classList.add('typewriter-cursor');
+        let i = 0;
+        
+        // 处理换行符 \n 为 <br>
+        const formattedText = text.replace(/\n/g, "<br>");
+        const tempDiv = document.createElement('div');
+        
+        function type() {
+          if (i < text.length) {
+            if (text.charAt(i) === '\n') {
+              element.innerHTML += "<br>";
+            } else {
+              element.innerHTML += text.charAt(i);
+            }
+            i++;
+            setTimeout(type, speed);
+          } else {
+            element.classList.remove('typewriter-cursor');
+            resolve();
+          }
+        }
+        type();
+      });
+    }
+
+    async function showInternPage(index) {
+      if (isTyping) return;
+      isTyping = true;
+      
+      const data = internData[index];
+      
+      // 清空现有内容
+      [internTitle, internDate, internCompany, internDesc1, internRole, internDesc2, internNote].forEach(el => el.innerHTML = "");
+      internLogo.src = data.logo;
+
+      // 按顺序触发打字机效果
+      await typeWriter(internTitle, data.title, 20);
+      await typeWriter(internDate, data.date, 15);
+      
+      await Promise.all([
+        typeWriter(internCompany, data.company, 15),
+        typeWriter(internRole, data.role, 15)
+      ]);
+
+      // 渲染描述列表
+      for (const desc of data.desc1) {
+        const item = document.createElement('div');
+        item.className = 'intern-desc-item';
+        internDesc1.appendChild(item);
+        await typeWriter(item, desc, 10);
+      }
+
+      for (const desc of data.desc2) {
+        const item = document.createElement('div');
+        item.className = 'intern-desc-item';
+        internDesc2.appendChild(item);
+        await typeWriter(item, desc, 10);
+      }
+
+      await typeWriter(internNote, data.note, 5);
+      
+      isTyping = false;
+    }
+
+    function openInternshipModal() {
+      internshipModalOverlay.style.display = 'flex';
+      internshipModalOverlay.offsetHeight;
+      internshipModalOverlay.classList.add('active');
+      
+      // 初始加载第一页
+      currentInternPage = 0;
+      internSwitchBtn.classList.remove('at-left');
+      internSwitchBtn.classList.add('at-right');
+      internSwitchBtn.innerText = "→";
+      showInternPage(0);
+    }
+
+    function closeInternshipModal() {
+      internshipModalOverlay.classList.remove('active');
+      setTimeout(() => {
+        if (!internshipModalOverlay.classList.contains('active')) {
+          internshipModalOverlay.style.display = 'none';
+        }
+      }, 600);
+    }
+
+    function switchInternPage() {
+      if (isTyping) return;
+      playClickSound();
+      
+      currentInternPage = (currentInternPage + 1) % internData.length;
+      
+      // 更新按钮位置与图标
+      if (currentInternPage === 0) {
+        internSwitchBtn.classList.remove('at-left');
+        internSwitchBtn.classList.add('at-right');
+        internSwitchBtn.innerText = "→";
+      } else {
+        internSwitchBtn.classList.remove('at-right');
+        internSwitchBtn.classList.add('at-left');
+        internSwitchBtn.innerText = "←";
+      }
+
+      showInternPage(currentInternPage);
+    }
+
+    internshipModalClose.addEventListener('click', closeInternshipModal);
+    internshipModalOverlay.addEventListener('click', (e) => {
+      if (e.target === internshipModalOverlay) closeInternshipModal();
+    });
+    internSwitchBtn.addEventListener('click', switchInternPage);
+
+    /* --- 项目精选相关逻辑 --- */
+    const projectModalOverlay = document.getElementById('projectModalOverlay');
+    const projectModalClose = document.getElementById('projectModalClose');
+    const projectItems = document.querySelectorAll('.project-item');
+
+    function openProjectModal() {
+      projectModalOverlay.style.display = 'flex';
+      // 强制触发重绘以应用动画
+      projectModalOverlay.offsetHeight; 
+      projectModalOverlay.classList.add('active');
+    }
+
+    function closeProjectModal() {
+      projectModalOverlay.classList.remove('active');
+      // 等待动画结束后销毁 DOM 节点显示
+      setTimeout(() => {
+        if (!projectModalOverlay.classList.contains('active')) {
+          projectModalOverlay.style.display = 'none';
+        }
+      }, 600);
+    }
+
+    projectModalClose.addEventListener('click', closeProjectModal);
+    projectModalOverlay.addEventListener('click', (e) => {
+      if (e.target === projectModalOverlay) closeProjectModal();
+    });
+
+    /* --- 技能包相关逻辑 --- */
+    const skillsModalOverlay = document.getElementById('skillsModalOverlay');
+    const skillsModalClose = document.getElementById('skillsModalClose');
+    const skillWheel = document.getElementById('skillWheel');
+    const skillHint = document.getElementById('skillOnboarding');
+    const skillDetailPanel = document.getElementById('skillDetailPanel');
+    const skillDetailTitle = document.getElementById('skillDetailTitle');
+    const skillDetailContent = document.getElementById('skillDetailContent');
+    
+    // 技能详细内容配置
+    const skillInfoData = [
+      { id: "ps", title: "平面视觉设计", icon: "ps.png", content: "熟练掌握Illustrator、Photoshop\n围绕 Illustrator、Photoshop完成整套视觉输出以及产品视觉部分落地\n从前期 logo 与风格方向，到后续海报、画册等物料延展\n形成相对完整的品牌视觉体系。" },
+      { id: "c4d", title: "三维建模与渲染", icon: "c4d.png", content: "熟悉Cinema 4D、KeyShot\n同时掌握 SketchUp、D5、AutoCAD等工具\n可独立完成从建模到渲染的完整流程。" },
+      { id: "gpt", title: "AI辅助设计能力", icon: "gpt.png", content: "熟练运用open ai、google、Anthropic以及国内ai公司旗下多款ai产品工具\n借助工具内的优秀大模型实现文案生成和视觉生成方面内容\n具备一定的vide coding能力，可结合工具实现美观的程序化视觉效果生成" },
+      { id: "figma", title: "产品与交互设计", icon: "figma.png", content: "使用 Figma 与墨刀完成界面设计与交互原型制作\n具备基础的用户体验意\n在视觉设计之外，能够兼顾信息结构与使用逻辑" },
+      { id: "ae", title: "动态与影像表达", icon: "ae.png", content: "掌握 After Effects 的基础动效制作，用于品牌动画及视觉过渡表达\n结合剪映进行短视频剪辑与内容输出，适配新媒体传播场景" },
+      { id: "pen", title: "手绘与创意表达", icon: "pen.png", content: "具备手绘与板绘基础，能够在设计初期通过草图快速建立画面构图与视觉关系，用于梳理整体方向与画面节奏\n相比直接依赖ai生成结果，手绘在表达上更具可控性，能够根据具体需求灵活调整造型与风格" }
+    ];
+
+    const skillCount = skillInfoData.length;
+    const skillRadius = 280;
+
+    let skillCurrentRotation = 0;
+    let skillTargetRotation = 0;
+    let isFirstSkillScroll = true;
+    let skillAnimationFrame;
+
+    // 动态生成技能板块
+    function initSkillWheel() {
+      skillWheel.innerHTML = '';
+      skillInfoData.forEach((info, i) => {
+        const node = document.createElement('div');
+        node.className = 'pixel-node';
+        
+        // 创建图片元件
+        const imgSlot = document.createElement('div');
+        imgSlot.className = 'pixel-node-img';
+        const img = document.createElement('img');
+        img.src = info.icon; // 使用配置中的固定 icon 路径
+        imgSlot.appendChild(img);
+        
+        node.appendChild(imgSlot);
+        
+        const angle = (i * 360 / skillCount);
+        // 初始位置设置
+        node.setAttribute('data-base-angle', angle);
+        
+        // 点击元素对齐中间并滑出内容
+        node.addEventListener('click', (e) => {
+          e.stopPropagation();
+          playClickSound();
+          
+          // 计算目标旋转角度，使该元素转到 180 度（最左侧/中间）
+          skillTargetRotation = 180 - angle;
+          
+          // 显示左侧详情
+          skillDetailTitle.innerText = info.title;
+          skillDetailContent.innerText = info.content;
+          skillDetailPanel.classList.add('active');
+        });
+
+        skillWheel.appendChild(node);
+      });
+    }
+
+    function openSkillsModal() {
+      skillsModalOverlay.style.display = 'flex';
+      skillsModalOverlay.offsetHeight;
+      skillsModalOverlay.classList.add('active');
+      
+      if (!skillWheel.children.length) initSkillWheel();
+      
+      // 重置引导、旋转和面板
+      skillHint.style.opacity = '1';
+      isFirstSkillScroll = true;
+      skillDetailPanel.classList.remove('active');
+      
+      // 启动动画循环
+      cancelAnimationFrame(skillAnimationFrame);
+      animateSkillWheel();
+    }
+
+    function closeSkillsModal() {
+      skillsModalOverlay.classList.remove('active');
+      cancelAnimationFrame(skillAnimationFrame);
+      setTimeout(() => {
+        if (!skillsModalOverlay.classList.contains('active')) {
+          skillsModalOverlay.style.display = 'none';
+        }
+      }, 600);
+    }
+
+    function animateSkillWheel() {
+      // 线性插值 (Lerp) 实现惯性平滑
+      skillCurrentRotation += (skillTargetRotation - skillCurrentRotation) * 0.1;
+      skillWheel.style.transform = `rotate(${skillCurrentRotation}deg)`;
+
+      const nodes = skillWheel.querySelectorAll('.pixel-node');
+      nodes.forEach((node, i) => {
+        const baseAngle = parseFloat(node.getAttribute('data-base-angle'));
+        // 计算每个板块当前的绝对旋转角度
+        const totalAngle = (baseAngle + skillCurrentRotation) % 360;
+        
+        // 如果板块在左侧（接近180度位置，即转盘的最左端）
+        const normalizedAngle = (totalAngle + 360) % 360;
+        if (Math.abs(normalizedAngle - 180) < 20) {
+          node.classList.add('active');
+        } else {
+          node.classList.remove('active');
+        }
+
+        // 保持文字始终水平：抵消父级的旋转
+        node.style.transform = `rotate(${baseAngle}deg) translate(${skillRadius}px) rotate(${-skillCurrentRotation - baseAngle}deg)`;
+      });
+
+      skillAnimationFrame = requestAnimationFrame(animateSkillWheel);
+    }
+
+    // 监听滚轮事件实现手摇旋转
+    skillsModalOverlay.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      
+      if (isFirstSkillScroll) {
+        skillHint.style.opacity = '0';
+        isFirstSkillScroll = false;
+      }
+
+      // 滚动时隐藏左侧面板，重新选择
+      skillDetailPanel.classList.remove('active');
+
+      // 累加旋转角度
+      skillTargetRotation -= e.deltaY * 0.5;
+    }, { passive: false });
+
+    skillsModalClose.addEventListener('click', closeSkillsModal);
+    skillsModalOverlay.addEventListener('click', (e) => {
+      if (e.target === skillsModalOverlay) closeSkillsModal();
+    });
+
+    // 封装通用详情弹窗逻辑
+    const originalOpenModal = (title, desc) => {
+      modalTitle.textContent = title;
+      modalDesc.innerHTML = desc.replace(/\n/g, '<br>');
+      modalOverlay.classList.add('active');
+    };
+
+    projectItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClickSound();
+        const title = item.getAttribute('data-title');
+        const desc = item.getAttribute('data-desc');
+        originalOpenModal(title, desc);
+      });
+    });
+
+    function openModal(el) {
+      playClickSound();
+      const name = el.getAttribute('data-name');
+
+      // 拦截“关于我”显示个人信息卡片
+      if (name === '关于我') {
+        openAboutCard();
+        return;
+      }
+
+      // 拦截“实习经历”显示实习弹窗
+      if (name === '实习经历') {
+        openInternshipModal();
+        return;
+      }
+
+      // 拦截“技能包”显示色环弹窗
+      if (name === '技能包') {
+        openSkillsModal();
+        return;
+      }
+
+      // 拦截“项目精选”显示项目弹窗
+      if (name === '项目精选') {
+        openProjectModal();
+        return;
+      }
+
+      const detail = partDetails[name] || { title: name, content: el.getAttribute('data-desc') };
+      originalOpenModal(detail.title, detail.content);
+    }
+
+    closeBtn.addEventListener('click', () => {
+      modalOverlay.classList.remove('active');
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        modalOverlay.classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html>

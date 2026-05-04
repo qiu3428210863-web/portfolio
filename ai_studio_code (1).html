@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <style>
+        /* 像素风格基础 */
+        :root {
+            --pixel-bg: #ffffff;
+            --pixel-border: #000000;
+            --pixel-accent: #ff4d4d; /* 像素红 */
+            --ring-size: 550px;
+        }
+
+        body {
+            margin: 0;
+            background-color: #f0f0f0;
+            /* 模拟像素背景纹理 */
+            background-image: linear-gradient(45deg, #e5e5e5 25%, transparent 25%), 
+                              linear-gradient(-45deg, #e5e5e5 25%, transparent 25%);
+            background-size: 4px 4px;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* 旋转容器 */
+        .rotary-wrapper {
+            position: absolute;
+            right: -100px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: var(--ring-size);
+            height: var(--ring-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 像素圆环主体 */
+        .pixel-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 8px double var(--pixel-border);
+            border-radius: 50%;
+            box-sizing: border-box;
+        }
+
+        /* 旋转载体 */
+        .wheel {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            will-change: transform;
+        }
+
+        /* 像素块（板块）*/
+        .pixel-node {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 140px;
+            height: 50px;
+            margin-top: -25px;
+            margin-left: -70px;
+            background: white;
+            border: 4px solid var(--pixel-border);
+            /* 像素风格阴影 */
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            image-rendering: pixelated;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .pixel-node.active {
+            background: var(--pixel-accent);
+            color: white;
+            transform: scale(1.1) translate(10px);
+            box-shadow: 6px 6px 0px #8a0000;
+        }
+
+        /* 交互引导提示层 */
+        #onboarding {
+            position: absolute;
+            left: -200px;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .mouse-icon {
+            width: 40px;
+            height: 60px;
+            border: 4px solid black;
+            border-radius: 20px;
+            margin: 0 auto 10px;
+            position: relative;
+        }
+
+        .mouse-wheel {
+            width: 6px;
+            height: 10px;
+            background: var(--pixel-accent);
+            position: absolute;
+            left: 50%;
+            margin-left: -3px;
+            top: 10px;
+            animation: scroll-hint 1.5s infinite;
+        }
+
+        @keyframes scroll-hint {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(15px); opacity: 0; }
+        }
+
+        .hint-text {
+            background: black;
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        /* 中心信息 */
+        .pixel-logo {
+            position: absolute;
+            z-index: 5;
+            font-size: 40px;
+            font-weight: 900;
+            text-shadow: 4px 4px 0px rgba(0,0,0,1);
+            color: var(--pixel-border);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="rotary-wrapper">
+        <!-- 中心Logo -->
+        <div class="pixel-logo">R&C</div>
+
+        <!-- 引导系统 -->
+        <div id="onboarding">
+            <div class="mouse-icon"><div class="mouse-wheel"></div></div>
+            <div class="hint-text">滚动滑轮 探索</div>
+        </div>
+
+        <div class="pixel-ring"></div>
+        <div class="wheel" id="wheel">
+            <!-- 自动生成 -->
+        </div>
+    </div>
+
+    <script>
+        const wheel = document.getElementById('wheel');
+        const hint = document.getElementById('onboarding');
+        const segments = ["MAIN_PAGE", "COLLECTION", "SKILL_LAB", "HISTORY", "CLIENTS", "CONTACT"];
+        const count = segments.length;
+        const radius = 280;
+
+        let currentRotation = 0;
+        let targetRotation = 0;
+        let isFirstScroll = true;
+
+        // 生成像素板块
+        segments.forEach((text, i) => {
+            const node = document.createElement('div');
+            node.className = 'pixel-node';
+            node.innerText = text;
+            const angle = (i * 360 / count);
+            node.style.transform = `rotate(${angle}deg) translate(${radius}px)`;
+            // 修正文字角度，使其保持水平
+            node.setAttribute('data-base-angle', angle);
+            wheel.appendChild(node);
+        });
+
+        // 滚轮交互逻辑
+        window.addEventListener('wheel', (e) => {
+            // 隐藏引导
+            if (isFirstScroll) {
+                hint.style.opacity = '0';
+                isFirstScroll = false;
+            }
+
+            // 累加旋转角度
+            // e.deltaY 在不同浏览器表现不同，这里做标准化处理
+            targetRotation -= e.deltaY * 0.5;
+            
+            // 阻止默认滚动行为（如页面上下滚动）
+            e.preventDefault();
+        }, { passive: false });
+
+        // 使用 requestAnimationFrame 实现丝滑物理感
+        function animate() {
+            // 线性插值 (Lerp) 实现惯性平滑
+            currentRotation += (targetRotation - currentRotation) * 0.1;
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            // 更新板块状态
+            const nodes = document.querySelectorAll('.pixel-node');
+            nodes.forEach((node, i) => {
+                const baseAngle = parseFloat(node.getAttribute('data-base-angle'));
+                // 计算每个板块当前的绝对旋转角度
+                const totalAngle = (baseAngle + currentRotation) % 360;
+                
+                // 如果板块在左侧（接近180度位置）
+                const normalizedAngle = (totalAngle + 360) % 360;
+                if (Math.abs(normalizedAngle - 180) < 20) {
+                    node.classList.add('active');
+                } else {
+                    node.classList.remove('active');
+                }
+
+                // 保持文字始终水平（可选，会让交互更易读）
+                node.style.transform = `rotate(${baseAngle}deg) translate(${radius}px) rotate(${-currentRotation - baseAngle}deg)`;
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
