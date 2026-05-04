@@ -703,6 +703,8 @@
     .contact-container {
       position: relative;
       width: min(900px, 90vw);
+      background: url('dhbg.webp') no-repeat center center; /* 恢复并使用 webp */
+      background-size: contain;
       display: flex;
       flex-direction: column; /* 核心修改：改为竖向排列 */
       justify-content: center;
@@ -1627,7 +1629,7 @@
       </div>
       <div class="entry-layer" id="layer-out">
         <div class="sync-container">
-          <img class="out-bg" src="out.png" alt="尾帧" />
+          <img class="out-bg" src="out.webp" alt="尾帧" />
           <div class="page" id="mainPage">
             <!-- 返回按钮 -->
             <div class="back-home-btn" id="backHomeBtn" title="返回首页">
@@ -1635,7 +1637,7 @@
             </div>
 
             <div class="scene-wrapper" id="sceneWrapper">
-              <img class="bg" src="bg.png" alt="场景背景" />
+              <img class="bg" src="bg.webp" alt="场景背景" />
               
               <!-- 导航栏 -->
               <nav class="top-nav" id="topNav">
@@ -1678,13 +1680,13 @@
     </div>
   </div>
 
-  <!-- 个人信息卡片弹窗 (基于 personalinformation.png) -->
+  <!-- 个人信息卡片弹窗 (基于 personalinformation.webp) -->
   <div class="about-card-overlay" id="aboutCardOverlay">
     <div class="info-image-container">
       <div class="info-close-btn" id="aboutCardClose">×</div>
       
       <!-- 主背景图 -->
-      <img src="personalinformation.png" alt="个人信息背景" class="info-main-img" />
+      <img src="personalinformation.webp" alt="个人信息背景" class="info-main-img" />
 
       <!-- 照片放置区域 (米白格子) -->
       <div class="photo-slot" id="photoFrame" title="点击切换照片">
@@ -1730,13 +1732,13 @@
     </div>
   </div>
 
-  <!-- 项目精选弹窗 (基于 xmbg.png) -->
+  <!-- 项目精选弹窗 (基于 xmbg.webp) -->
   <div class="project-modal-overlay" id="projectModalOverlay">
     <div class="project-container">
       <div class="project-close-btn" id="projectModalClose">×</div>
       
-      <!-- 项目背景图 -->
-      <img src="xmbg.png" alt="项目精选背景" class="project-bg-img" />
+      <!-- 主背景图 -->
+      <img src="xmbg.webp" alt="项目精选背景" class="project-bg-img" />
 
       <!-- 项目内容元素 (xm1-xm4) -->
       <div class="project-item" id="xm-1" data-title="项目精选 01" data-desc="这是项目 1 的详细描述内容，你可以在 JavaScript 中修改这些文案。">
