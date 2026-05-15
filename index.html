@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D 粘土风格场景交互</title>
+  <title>邱晓岷个人作品集网站</title>
   <!-- 引入像素风格字体 -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
@@ -703,8 +703,6 @@
     .contact-container {
       position: relative;
       width: min(900px, 90vw);
-      background: url('dhbg.webp') no-repeat center center; /* 恢复并使用 webp */
-      background-size: contain;
       display: flex;
       flex-direction: column; /* 核心修改：改为竖向排列 */
       justify-content: center;
@@ -1246,7 +1244,7 @@
     }
 
     .intern-header {
-      font-size: 32px; /* 调大字号 */
+      font-size: 32px; /* 恢复字号 */
       font-weight: 900;
       margin-bottom: 5px;
       letter-spacing: 2px;
@@ -1254,20 +1252,23 @@
     }
 
     .intern-sub-header {
-      font-size: 18px; /* 调大字号 */
+      font-size: 14px; /* 恢复字号 */
       margin-bottom: 25px;
-      color: #333;
-      display: flex;
+      color: #fff;
+      display: inline-flex;
       align-items: center;
-      gap: 15px;
+      align-self: flex-start;
+      background: #007bff; /* 蓝色标签 */
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: 'Press Start 2P', cursive;
+      letter-spacing: 0;
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+      width: auto;
     }
 
     .intern-sub-header::after {
-      content: '';
-      flex: 1;
-      height: 2px;
-      background: #333;
-      opacity: 0.2;
+      display: none; /* 移除之前的线 */
     }
 
     .intern-section {
@@ -1275,20 +1276,20 @@
     }
 
     .intern-label {
-      font-size: 14px; /* 调大字号 */
+      font-size: 14px; /* 恢复字号 */
       color: #666;
       text-transform: uppercase;
       margin-bottom: 5px;
     }
 
     .intern-title {
-      font-size: 20px; /* 调大字号 */
+      font-size: 20px; /* 恢复字号 */
       font-weight: bold;
       margin-bottom: 10px;
     }
 
     .intern-desc-list {
-      font-size: 15px; /* 调大字号 */
+      font-size: 15px; /* 恢复字号 */
       line-height: 1.6;
       color: #444;
       margin-top: 10px;
@@ -1315,25 +1316,132 @@
       transform: rotate(-1deg);
     }
 
-    /* Logo 图片区域 (右下角) */
-    .intern-logo-area {
+    /* 拍立得照片堆叠容器 */
+    .polaroid-stack {
       position: absolute;
-      bottom: 12%;
-      right: 12%;
-      width: 120px;
-      height: 80px;
-      background: rgba(0,0,0,0.02);
-      border: 1px dashed #ccc;
+      bottom: 9%; 
+      left: 15%;   /* 继续向左移动 (从 32% 改为 15%) */
+      width: 220px; /* 增加容器宽度以适应更大的照片 */
+      height: 240px;
+      z-index: 10;
+      pointer-events: auto;
+    }
+
+    .polaroid-item {
+      position: absolute;
+      width: 160px; /* 进一步放大 (从 130px 改为 160px) */
+      height: 190px; /* 进一步放大 (从 155px 改为 190px) */
+      background: #fff;
+      padding: 12px 12px 36px 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      border: 1px solid #eee;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      transform-origin: center;
+    }
+
+    /* 引导提示词样式 */
+    .polaroid-hint {
+      position: absolute;
+      bottom: -30px; /* 移动到照片下方 (原为 top: -50px) */
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 123, 255, 0.9);
+      color: #fff;
+      padding: 4px 10px; /* 调小宽度 */
+      border-radius: 20px;
+      font-size: 12px; /* 调小字号 */
+      font-family: 'ZCOOL KuaiLe', sans-serif;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      animation: hintFloat 2s infinite ease-in-out;
+      opacity: 0.8;
+      z-index: 15;
+    }
+
+    .polaroid-hint::after {
+      content: '';
+      position: absolute;
+      top: -6px; /* 箭头改到上方指向照片 */
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 6px solid rgba(0, 123, 255, 0.9); /* 箭头方向向上 */
+    }
+
+    @keyframes hintFloat {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    .polaroid-item img {
+      width: 100%;
+      height: 85%;
+      object-fit: cover;
+      background: #f0f0f0;
+    }
+
+    /* 照片下方文字样式 */
+    .polaroid-caption {
+      width: 100%;
+      height: 15%;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: 'ZCOOL KuaiLe', sans-serif;
+      font-size: 12px;
+      color: #333;
       overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      padding-top: 5px;
+    }
+
+    /* 默认堆叠状态 - 随意倾斜 */
+    .polaroid-item:nth-child(1) { transform: rotate(-10deg) translate(-30px, 0px); z-index: 3; }
+    .polaroid-item:nth-child(2) { transform: rotate(5deg) translate(20px, 12px); z-index: 2; }
+    .polaroid-item:nth-child(3) { transform: rotate(-5deg) translate(-12px, 20px); z-index: 1; }
+
+    /* 展开状态 (鼠标悬停在容器上时) - 同步调整位移距离 */
+    .polaroid-stack:hover .polaroid-item:nth-child(1) { transform: rotate(-15deg) translate(-110px, -80px) scale(1.1); z-index: 10; }
+    .polaroid-stack:hover .polaroid-item:nth-child(2) { transform: rotate(0deg) translate(40px, -110px) scale(1.1); z-index: 11; }
+    .polaroid-stack:hover .polaroid-item:nth-child(3) { transform: rotate(15deg) translate(190px, -60px) scale(1.1); z-index: 12; }
+    
+    /* 悬停时提示词消失 */
+    .polaroid-stack:hover .polaroid-hint { opacity: 0; transition: opacity 0.3s ease; }
+
+    .polaroid-item:hover {
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 20 !important;
+    }
+
+    /* Logo 图片区域 (右下角) */
+    .intern-logo-area {
+      position: absolute;
+      bottom: 15%;  /* 稍微下移 */
+      right: 8.5%;  /* 稍微右移 */
+      width: 195px; /* 放大容器宽度 */
+      height: 120px; /* 放大容器高度 */
+      background: transparent; /* 移除灰色背景 */
+      border: none; /* 移除虚线边框 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible; /* 允许旋转后溢出 */
     }
 
     .intern-logo-area img {
-      max-width: 80%;
-      max-height: 80%;
+      max-width: 100%; /* 占满容器 */
+      max-height: 100%;
       object-fit: contain;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 专门为旋转准备的类 */
+    .rotate-90 {
+      transform: rotate(90deg);
     }
 
     /* 切换按钮 */
@@ -1721,6 +1829,9 @@
         </div>
 
         <div class="gray-note" id="internNote"></div>
+
+        <!-- 拍立得照片堆叠容器 -->
+        <div class="polaroid-stack" id="polaroidStack"></div>
 
         <div class="intern-logo-area">
           <img src="" alt="Company Logo" id="internLogo" />
@@ -2202,23 +2313,33 @@
     const internData = [
       {
         title: "INTERNSHIP\nEXPERIENCE 01",
-        date: "2024.03 - 2024.09",
-        company: "XX 创意科技设计有限公司",
-        desc1: ["→ 负责公司移动端产品的界面视觉设计与原型搭建。", "→ 配合前端工程师完成设计稿的 100% 像素级还原。", "→ 参与 3D 粘土风格品牌视觉包的建模与渲染工作。"],
-        role: "UI / 交互设计师实习生",
-        desc2: ["→ 制定 UI 设计规范，提升团队设计效率。", "→ 进行用户调研与交互链路优化。"],
-        note: "Túnel hacia ti (revisitado)\nGabriel Carrillo de Icaza / 1:30 pm\n\nProyector Como Oráculo:\nRevelaciones en Super 8mm\nMichael Ramos-Araizaga / 4 pm",
-        logo: ""
+        date: "2024.06 - 2024.08",
+        company: "权佳家政服务有限公司",
+        desc1: ["→ 负责房地产开荒保洁业务的新媒体冷启动。", "→ 围绕“新房交付开荒”场景进行内容策划", "→ 参与直播间视觉系统搭建。"],
+        role: "DESIGN / 新媒体运营",
+        desc2: ["→ 搭建「内容种草 → 私信承接 → 转化」的内容转化路径。", "→ 实习期内通过内容渠道支持2–3单成交，验证线上获客可行性。","→ 复盘平台运营逻辑，优化内容策略与用户沟通方式"],
+        note: "",
+        logo: "logo.webp", // 在这里替换为你的第一张实习公司图片路径
+        photos: [
+          { src: "sx1-1.webp", caption: "公司现场实拍" },
+          { src: "sx1-2.webp", caption: "工位展示" },
+          { src: "sx1-3.webp", caption: "跟随拍摄现场" }
+        ] // 第一页拍立得照片路径
       },
       {
         title: "INTERNSHIP\nEXPERIENCE 02",
-        date: "2023.07 - 2024.02",
-        company: "YY 互联网大厂体验设计部",
-        desc1: ["→ 协助设计师完成 B 端后台系统的设计规范制定。", "→ 负责产品活动页面的视觉排版与动效设计。", "→ 进行竞品分析并产出高质量的设计调研报告。"],
-        role: "交互视觉设计实习生",
-        desc2: ["→ 优化核心业务模块的交互体验。", "→ 产出多份高质量设计复盘文档。"],
-        note: "Un mensaje no para ti,\nalgo dentro de dentro de ti\n(remaing nansi) / 5 pm\n\nno pante no animal\nPenriano, lela / 7 pm",
-        logo: ""
+        date: "2025.05 - 2026.03",
+        company: "深度灰（福州）品牌营销策划管理有限公司",
+        desc1: ["→ 参与多款快速消费品牌项目设计开发", "→ 参与电商视觉与包装方案设计。", "→ 进行竞品分析并产出高质量的设计调研报告。"],
+        role: "品牌策划实习生",
+        desc2: ["→ 负责公司酒类快消品板块的设计到落地部分", "→ 产出多份高质量的品牌设计策划案。","→ 必要时借助三维工具来助力品牌方案落地。"],
+        note: "",
+        logo: "logo2.webp", // 在这里替换为你的第二张实习公司图片路径
+        photos: [
+          { src: "sx2-1.webp", caption: "工位展示" },
+          { src: "sx2-2.webp", caption: "产品原型设计打样" },
+          { src: "sx2-3.webp", caption: "落地项目产出实拍" }
+        ] // 第二页拍立得照片路径
       }
     ];
 
@@ -2262,14 +2383,45 @@
       // 清空现有内容
       [internTitle, internDate, internCompany, internDesc1, internRole, internDesc2, internNote].forEach(el => el.innerHTML = "");
       internLogo.src = data.logo;
+      
+      // 处理 Logo 旋转
+      if (index === 1) {
+        internLogo.classList.add('rotate-90');
+      } else {
+        internLogo.classList.remove('rotate-90');
+      }
 
-      // 按顺序触发打字机效果
-      await typeWriter(internTitle, data.title, 20);
-      await typeWriter(internDate, data.date, 15);
+      // 渲染拍立得照片
+      polaroidStack.innerHTML = '<div class="polaroid-hint">发现新动态，点击/悬停查看</div>';
+      if (data.photos && data.photos.length > 0) {
+        data.photos.forEach(photoObj => {
+          const item = document.createElement('div');
+          item.className = 'polaroid-item';
+          
+          // 图片
+          const img = document.createElement('img');
+          img.src = photoObj.src || photoObj; // 兼容旧的字符串数组或新的对象数组
+          item.appendChild(img);
+          
+          // 注释文字
+          if (photoObj.caption) {
+            const caption = document.createElement('div');
+            caption.className = 'polaroid-caption';
+            caption.textContent = photoObj.caption;
+            item.appendChild(caption);
+          }
+          
+          polaroidStack.appendChild(item);
+        });
+      }
+
+      // 按顺序触发打字机效果 (加快速度)
+      await typeWriter(internTitle, data.title, 10);
+      await typeWriter(internDate, data.date, 8);
       
       await Promise.all([
-        typeWriter(internCompany, data.company, 15),
-        typeWriter(internRole, data.role, 15)
+        typeWriter(internCompany, data.company, 8),
+        typeWriter(internRole, data.role, 8)
       ]);
 
       // 渲染描述列表
@@ -2277,17 +2429,17 @@
         const item = document.createElement('div');
         item.className = 'intern-desc-item';
         internDesc1.appendChild(item);
-        await typeWriter(item, desc, 10);
+        await typeWriter(item, desc, 5);
       }
 
       for (const desc of data.desc2) {
         const item = document.createElement('div');
         item.className = 'intern-desc-item';
         internDesc2.appendChild(item);
-        await typeWriter(item, desc, 10);
+        await typeWriter(item, desc, 5);
       }
 
-      await typeWriter(internNote, data.note, 5);
+      await typeWriter(internNote, data.note, 2);
       
       isTyping = false;
     }
